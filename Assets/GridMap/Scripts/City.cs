@@ -3,5 +3,5 @@ using UnityEngine;
 
 public class City : MonoBehaviour
 {
-    
+    public HexagonGame gameHex;
 }

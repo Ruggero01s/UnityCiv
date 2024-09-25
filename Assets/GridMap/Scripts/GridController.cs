@@ -15,9 +15,12 @@ public class GridController : MonoBehaviour
 	public GameObject mountainHex;
 	public GameObject forestHex;
 	public GameObject oceanHex;
+
+	public GameObject ownerOverlayLoad;
+	public static GameObject ownerOverlay;
+
 	public GameObject playerCityModel;
 	public GameObject enemyCityModel;
-
 	public GameObject playerUnitModel;
 	public GameObject enemyUnitModel;
 	public List<HexagonGame> possibleSpawnHexes = new List<HexagonGame>();
@@ -41,22 +44,30 @@ public class GridController : MonoBehaviour
 
 	public Pathfinding pathfinder;
 
-	public static List<Unit> playerUnits = new List<Unit>();
-	public static List<Unit> enemyUnits = new List<Unit>();
+	public List<Unit> playerUnits = new List<Unit>();
+	public List<Unit> enemyUnits = new List<Unit>();
+	public Player player;
 
-	public static City playerCity;
+	public Player enemy;
+	public City playerCity;
 
-	public static City enemyCity;
+	public City enemyCity;
 
+	public TurnManager turnManager;
+	private bool generationInProgress;
+	private bool firstUpdate = false;
 
 	// Start is called before the first frame update
 	void Start()
 	{
+		ownerOverlay = ownerOverlayLoad;
 		hexagons = new Hexagon[gridSize.x, gridSize.y];
 		gameHexagons = new HexagonGame[gridSize.x, gridSize.y];
 		noiseSeedAlt = Random.Range(0.1f, 0.5f);
 		noiseSeedForest = Random.Range(0.1f, 0.5f);
+		generationInProgress = true;
 		GenerateHexMap(gridSize);
+
 		foreach (HexagonGame gameHex in gameHexagons)
 		{
 			if (gameHex.CompareTag("MovableTerrain"))
@@ -64,52 +75,49 @@ public class GridController : MonoBehaviour
 				possibleSpawnHexes.Add(gameHex);
 			}
 		}
+
+		InitializePlayers();
+
 		SpawnCitiesAndUnits();
+
+		// Find the TurnManager in the scene
+		turnManager = FindObjectOfType<TurnManager>();
+		firstUpdate = true;
 	}
+
 
 	// Update is called once per frame
 	void Update()
 	{
-		if (selectedUnit != null)
-		{
-			if (Input.GetMouseButtonUp(0))
+		if (firstUpdate){
+			List<HexagonGame> neighbors = GetGameNeighbors(playerCity.gameHex);
+			for (int i = 0; i < neighbors.Count; i++)
 			{
-				Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-				RaycastHit hit;
-				if (Physics.Raycast(ray, out hit))
+				if (neighbors[i].hexType.Equals(waterHex))
 				{
-					if (hit.collider.CompareTag("MovableTerrain"))
-					{
-						selectedTerrain = hit.transform.gameObject.GetComponent<HexagonGame>();
-						Debug.Log("hit a movable terrain");
-					}
+					neighbors.RemoveAt(i);
+					i--;
 				}
-				if (selectedTerrain != null)
+				else
 				{
-					HexagonGame startHex = gameHexagons[selectedUnit.coordinates.x, selectedUnit.coordinates.y];
-					HexagonGame endHex = gameHexagons[selectedTerrain.coordinates.x, selectedTerrain.coordinates.y];
-					selectedUnit.path = pathfinder.FindPath(startHex, endHex);
-					for (int i = 0; i < selectedUnit.path.Count; i++)
-					{
-						Debug.Log(selectedUnit.path[i].ToString()); // TODO REMOVE DEBUG
-					}
+					neighbors[i].ClaimHex(player);
 				}
 			}
-		}
 
-		if (Input.GetMouseButtonUp(0))
-		{
-			Debug.Log("click");
-			Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-			RaycastHit hit;
-			if (Physics.Raycast(ray, out hit))
+			neighbors = GetGameNeighbors(enemyCity.gameHex);
+			for (int i = 0; i < neighbors.Count; i++)
 			{
-				if (hit.collider.CompareTag("PlayerUnit"))
+				if (neighbors[i].hexType.Equals(waterHex))
 				{
-					selectedUnit = hit.transform.gameObject.GetComponent<Unit>();
-					Debug.Log("hit a PlayerUnit tag");
+					neighbors.RemoveAt(i);
+					i--;
+				}
+				else
+				{
+					neighbors[i].ClaimHex(enemy);
 				}
 			}
+			firstUpdate = false;
 		}
 	}
 
@@ -248,6 +256,7 @@ public class GridController : MonoBehaviour
 				gameHexagons[x, y] = newHex.GetComponent<HexagonGame>();
 			}
 		}
+		generationInProgress = false;
 	}
 
 	public List<Hexagon> GetNeighbors(Hexagon hex)
@@ -281,40 +290,40 @@ public class GridController : MonoBehaviour
 	}
 
 	public List<HexagonGame> GetGameNeighbors(HexagonGame hex)
-{
-    int x = hex.coordinates.x;
-    int y = hex.coordinates.y;
+	{
+		int x = hex.coordinates.x;
+		int y = hex.coordinates.y;
 
-    var neighbors = new List<HexagonGame>();
+		var neighbors = new List<HexagonGame>();
 
-    if (y % 2 == 1)
-    {
-        neighbors = new List<HexagonGame>
-        {
-            (y-1 >= 0)                           ? gameHexagons[x, y - 1] : null,
-            (x+1 < gridSize.x && y-1 >= 0)       ? gameHexagons[x+1, y-1] : null,
-            (x+1 < gridSize.x)                   ? gameHexagons[x+1, y] : null,
-            (x+1 < gridSize.x && y+1 < gridSize.y)? gameHexagons[x+1, y+1] : null,
-            (y+1 < gridSize.y)                   ? gameHexagons[x, y+1] : null,
-            (x-1 >= 0)                           ? gameHexagons[x-1, y] : null
-        };
-    }
-    else
-    {
-        neighbors = new List<HexagonGame>
-        {
-            (x-1 >= 0 && y-1 >= 0)               ? gameHexagons[x-1, y - 1] : null,
-            (y-1 >= 0)                           ? gameHexagons[x, y-1] : null,
-            (x+1 < gridSize.x)                   ? gameHexagons[x+1, y] : null,
-            (y+1 < gridSize.y)                   ? gameHexagons[x, y+1] : null,
-            (x-1 >= 0 && y+1 < gridSize.y)       ? gameHexagons[x-1, y+1] : null,
-            (x-1 >= 0)                           ? gameHexagons[x-1, y] : null
-        };
-    }
+		if (y % 2 == 1)
+		{
+			neighbors = new List<HexagonGame>
+		{
+			(y-1 >= 0)                           ? gameHexagons[x, y - 1] : null,
+			(x+1 < gridSize.x && y-1 >= 0)       ? gameHexagons[x+1, y-1] : null,
+			(x+1 < gridSize.x)                   ? gameHexagons[x+1, y] : null,
+			(x+1 < gridSize.x && y+1 < gridSize.y)? gameHexagons[x+1, y+1] : null,
+			(y+1 < gridSize.y)                   ? gameHexagons[x, y+1] : null,
+			(x-1 >= 0)                           ? gameHexagons[x-1, y] : null
+		};
+		}
+		else
+		{
+			neighbors = new List<HexagonGame>
+		{
+			(x-1 >= 0 && y-1 >= 0)               ? gameHexagons[x-1, y - 1] : null,
+			(y-1 >= 0)                           ? gameHexagons[x, y-1] : null,
+			(x+1 < gridSize.x)                   ? gameHexagons[x+1, y] : null,
+			(y+1 < gridSize.y)                   ? gameHexagons[x, y+1] : null,
+			(x-1 >= 0 && y+1 < gridSize.y)       ? gameHexagons[x-1, y+1] : null,
+			(x-1 >= 0)                           ? gameHexagons[x-1, y] : null
+		};
+		}
 
-    // Remove null values
-    return neighbors.Where(n => n != null).ToList();
-}
+		// Remove null values
+		return neighbors.Where(n => n != null).ToList();
+	}
 
 
 	public void ForestGen()
@@ -334,6 +343,13 @@ public class GridController : MonoBehaviour
 		}
 	}
 
+
+	private void InitializePlayers()
+	{
+		player = new Player("Tyurn", Color.red);
+		enemy = new Player("Undeads", Color.black);
+	}
+
 	private void SpawnCitiesAndUnits()
 	{
 		HexagonGame playerCityHex = possibleSpawnHexes[Random.Range(0, possibleSpawnHexes.Count)];
@@ -350,37 +366,43 @@ public class GridController : MonoBehaviour
 		}
 		HexagonGame enemyCityHex = enemySpawnHexes[Random.Range(0, enemySpawnHexes.Count)];
 
-		GameObject playerCity = Instantiate(playerCityModel, playerCityHex.transform.position, Quaternion.identity);
+		GameObject playerCityLocal = Instantiate(playerCityModel, playerCityHex.transform.position, Quaternion.identity);
 		playerCityHex.tag = "City";
-		playerCity.AddComponent<City>();
+		playerCityLocal.AddComponent<City>();
+		playerCity = playerCityLocal.GetComponent<City>();
+		playerCity.gameHex = playerCityHex;
 		DestroyImmediate(playerCityModel.GetComponent<BoxCollider>(), true);
 
-		GameObject enemyCity = Instantiate(enemyCityModel, enemyCityHex.transform.position, Quaternion.identity);
+		GameObject enemyCityLocal = Instantiate(enemyCityModel, enemyCityHex.transform.position, Quaternion.identity);
 		enemyCityHex.tag = "EnemyCity";
-		enemyCity.AddComponent<City>();
+		enemyCityLocal.AddComponent<City>();
+		enemyCity = enemyCityLocal.GetComponent<City>();
+		enemyCity.gameHex = enemyCityHex;
 		DestroyImmediate(enemyCityModel.GetComponent<BoxCollider>(), true);
 
 
-		playerCity.transform.localScale = new Vector3(7, 7, 7);
-		enemyCity.transform.localScale = new Vector3(7, 7, 7);
-		Vector3 pos = playerCity.transform.position;
+		playerCityLocal.transform.localScale = new Vector3(7, 7, 7);
+		enemyCityLocal.transform.localScale = new Vector3(7, 7, 7);
+		Vector3 pos = playerCityLocal.transform.position;
 		pos.y = (float)(pos.y + 0.4);
-		playerCity.transform.position = pos;
+		playerCityLocal.transform.position = pos;
 
-		pos = enemyCity.transform.position;
+		pos = enemyCityLocal.transform.position;
 		pos.y = (float)(pos.y + 0.6);
-		enemyCity.transform.position = pos;
+		enemyCityLocal.transform.position = pos;
 
 		List<HexagonGame> neighbors = GetGameNeighbors(playerCityHex);
+
 		for (int i = 0; i < STARTING_UNITS; i++)
 		{
 			HexagonGame chosenHex = neighbors[Random.Range(0, neighbors.Count)];
 			pos = chosenHex.rawPosition;
 			pos.y = 2.36f;
 			GameObject playerUnit = Instantiate(playerUnitModel, pos, Quaternion.identity);
-	
+
 			Unit unitComp = playerUnit.GetComponent<Unit>();
 			unitComp.coordinates = chosenHex.coordinates;
+			unitComp.owner = player;
 			playerUnits.Add(playerUnit.GetComponent<Unit>());
 			neighbors.Remove(chosenHex);
 		}
@@ -392,9 +414,10 @@ public class GridController : MonoBehaviour
 			pos = chosenHex.rawPosition;
 			pos.y = 2f;
 			GameObject enemyUnit = Instantiate(enemyUnitModel, pos, Quaternion.identity);
-			
+
 			Unit unitComp = enemyUnit.GetComponent<Unit>();
 			unitComp.coordinates = chosenHex.coordinates;
+			unitComp.owner = enemy;
 			enemyUnits.Add(unitComp);
 			neighbors.Remove(chosenHex);
 		}
@@ -425,6 +448,8 @@ public class GridController : MonoBehaviour
 
 		return new Vector3Int(x, y, z);
 	}
+
+
 
 }
 

@@ -94,7 +94,7 @@ public class Pathfinding
         }
         path.Reverse();
         path.Remove(path[0]);
-        return path.Take(3).ToList();
+        return path;
     }
 
     private HexagonGame GetLowestFCostNode(List<HexagonGame> nodeList)
