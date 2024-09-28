@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class TurnManager : MonoBehaviour
 {
@@ -12,11 +14,17 @@ public class TurnManager : MonoBehaviour
     public List<Unit> enemyUnits;
 
     private Unit selectedUnit;
+    private City selectedCity;
+
+    private CityHUDManager cityHUDManager;
+    private GridController gridController;
 
     void Start()
     {
         currentTurn = TurnState.PlayerTurn;  // Player starts first
-        GridController gridController = FindObjectOfType<GridController>();
+        gridController = FindObjectOfType<GridController>();
+        cityHUDManager = FindObjectOfType<CityHUDManager>();
+
 
         // Load the unit lists from the GridController
         playerUnits = gridController.playerUnits;
@@ -27,39 +35,51 @@ public class TurnManager : MonoBehaviour
 
     void Update()
     {
+
         HandleInput();  // Manage player input for selecting units and issuing commands
     }
 
-    void HandleInput()
+void HandleInput()
+{
+    if (currentTurn == TurnState.PlayerTurn)
     {
-        if (currentTurn == TurnState.PlayerTurn)
+        if (Input.GetMouseButtonUp(0))
         {
-            if (Input.GetMouseButtonUp(0))
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            RaycastHit hit;
+            if (Physics.Raycast(ray, out hit))
             {
-                Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-                RaycastHit hit;
-                if (Physics.Raycast(ray, out hit))
+                // Select a player unit
+                if (hit.collider.CompareTag("PlayerUnit")  && !EventSystem.current.IsPointerOverGameObject())
                 {
-                    // Select a player unit
-                    if (hit.collider.CompareTag("PlayerUnit"))
-                    {
-                        selectedUnit = hit.transform.GetComponent<Unit>();
-                    }
+                    selectedUnit = hit.transform.GetComponent<Unit>();
+                }
 
-                    // If a unit is selected, move it to the selected terrain
-                    if (selectedUnit != null && selectedUnit.movementExpended < selectedUnit.movementUnits)
+                // If a unit is selected, move it to the selected terrain
+                if (selectedUnit != null && selectedUnit.movementExpended < selectedUnit.movementUnits)
+                {
+                    if (hit.collider.CompareTag("MovableTerrain")  && !EventSystem.current.IsPointerOverGameObject())
                     {
-                        if (hit.collider.CompareTag("MovableTerrain"))
-                        {
-                            HexagonGame targetHex = hit.transform.GetComponent<HexagonGame>();
-                            GridController gridController = FindObjectOfType<GridController>();
-                            HexagonGame startHex = gridController.gameHexagons[selectedUnit.coordinates.x, selectedUnit.coordinates.y];
-                            selectedUnit.SetDestination(gridController.pathfinder.FindPath(startHex, targetHex));
-                        }
+                        HexagonGame targetHex = hit.transform.GetComponent<HexagonGame>();
+                        HexagonGame startHex = gridController.gameHexagons[selectedUnit.coordinates.x, selectedUnit.coordinates.y];
+                        selectedUnit.SetDestination(gridController.pathfinder.FindPath(startHex, targetHex));
                     }
+                }
+
+                // Detect a city click
+                if (hit.collider.CompareTag("City") && !EventSystem.current.IsPointerOverGameObject())
+                {
+                    selectedCity = hit.collider.GetComponent<City>();
+                    cityHUDManager.OpenCityHUD(selectedCity); // Open HUD for the city
                 }
             }
         }
+    }
+}
+
+    private void OpenCityHUD(City city)
+    {
+        throw new NotImplementedException();
     }
 
     bool AllPlayerUnitsMoved()

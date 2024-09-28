@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class HexagonGame : MonoBehaviour
 {
@@ -53,7 +54,10 @@ public class HexagonGame : MonoBehaviour
 
     void OnMouseEnter()
     {
-        DarkenTexture();
+        if(!EventSystem.current.IsPointerOverGameObject())
+        {
+            DarkenTexture();
+        }
     }
 
     void OnMouseExit()

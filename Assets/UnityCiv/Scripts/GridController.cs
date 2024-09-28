@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Linq;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class GridController : MonoBehaviour
@@ -54,7 +55,6 @@ public class GridController : MonoBehaviour
 	public City enemyCity;
 
 	public TurnManager turnManager;
-	private bool generationInProgress;
 	private bool firstUpdate = false;
 
 	// Start is called before the first frame update
@@ -65,7 +65,6 @@ public class GridController : MonoBehaviour
 		gameHexagons = new HexagonGame[gridSize.x, gridSize.y];
 		noiseSeedAlt = Random.Range(0.1f, 0.5f);
 		noiseSeedForest = Random.Range(0.1f, 0.5f);
-		generationInProgress = true;
 		GenerateHexMap(gridSize);
 
 		foreach (HexagonGame gameHex in gameHexagons)
@@ -89,7 +88,8 @@ public class GridController : MonoBehaviour
 	// Update is called once per frame
 	void Update()
 	{
-		if (firstUpdate){
+		if (firstUpdate)
+		{
 			List<HexagonGame> neighbors = GetGameNeighbors(playerCity.gameHex);
 			for (int i = 0; i < neighbors.Count; i++)
 			{
@@ -256,7 +256,6 @@ public class GridController : MonoBehaviour
 				gameHexagons[x, y] = newHex.GetComponent<HexagonGame>();
 			}
 		}
-		generationInProgress = false;
 	}
 
 	public List<Hexagon> GetNeighbors(Hexagon hex)
@@ -368,16 +367,20 @@ public class GridController : MonoBehaviour
 
 		GameObject playerCityLocal = Instantiate(playerCityModel, playerCityHex.transform.position, Quaternion.identity);
 		playerCityHex.tag = "City";
-		playerCityLocal.AddComponent<City>();
-		playerCity = playerCityLocal.GetComponent<City>();
+		playerCityHex.gameObject.AddComponent<City>();
+		playerCity = playerCityHex.gameObject.GetComponent<City>();
 		playerCity.gameHex = playerCityHex;
+		playerCity.owner = player;
+
 		DestroyImmediate(playerCityModel.GetComponent<BoxCollider>(), true);
 
 		GameObject enemyCityLocal = Instantiate(enemyCityModel, enemyCityHex.transform.position, Quaternion.identity);
 		enemyCityHex.tag = "EnemyCity";
-		enemyCityLocal.AddComponent<City>();
-		enemyCity = enemyCityLocal.GetComponent<City>();
+		enemyCityHex.gameObject.AddComponent<City>();
+		enemyCity = enemyCityHex.gameObject.GetComponent<City>();
 		enemyCity.gameHex = enemyCityHex;
+		enemyCity.owner = enemy;
+
 		DestroyImmediate(enemyCityModel.GetComponent<BoxCollider>(), true);
 
 
@@ -392,7 +395,14 @@ public class GridController : MonoBehaviour
 		enemyCityLocal.transform.position = pos;
 
 		List<HexagonGame> neighbors = GetGameNeighbors(playerCityHex);
-
+		for (int i = 0; i < neighbors.Count; i++)
+		{
+			if (neighbors[i].hexType.Equals(waterHex))
+			{
+				neighbors.RemoveAt(i);
+				i--;
+			}
+		}
 		for (int i = 0; i < STARTING_UNITS; i++)
 		{
 			HexagonGame chosenHex = neighbors[Random.Range(0, neighbors.Count)];
@@ -408,6 +418,14 @@ public class GridController : MonoBehaviour
 		}
 
 		neighbors = GetGameNeighbors(enemyCityHex);
+		for (int i = 0; i < neighbors.Count; i++)
+		{
+			if (neighbors[i].hexType.Equals(waterHex))
+			{
+				neighbors.RemoveAt(i);
+				i--;
+			}
+		}
 		for (int i = 0; i < STARTING_UNITS; i++)
 		{
 			HexagonGame chosenHex = neighbors[Random.Range(0, neighbors.Count)];
