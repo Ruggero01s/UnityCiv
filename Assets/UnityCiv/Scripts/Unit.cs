@@ -5,8 +5,15 @@ using UnityEngine;
 public class Unit : MonoBehaviour
 {
     public Player owner; // The player or faction that controls this unit
-    public int hp;
-    public int strength;
+    public int maxHp = 10;
+    public int hp = 10;
+    public int atk = 6;
+    public int def = 4;
+
+    // Movement-related variables
+    public int movementUnits = 3;   // Maximum movement units per turn
+    public int movementExpended = 0;// Movement points used in the current turn
+
     private Animator animator;
     
     // The path the unit will follow (set externally when a destination is selected)
@@ -20,9 +27,11 @@ public class Unit : MonoBehaviour
 
     public bool isMoving = false;   // Whether the unit is currently moving
 
-    // Movement-related variables
-    public int movementUnits = 3;   // Maximum movement units per turn
-    public int movementExpended = 0;// Movement points used in the current turn
+    public bool isFighting = false;
+
+    public bool isDying = false;
+
+    
 
     private bool destinationReached = false; // Flag for destination status
 
@@ -33,8 +42,12 @@ public class Unit : MonoBehaviour
 
     void Update()
     {
-        // Update animation based on movement status
+        // Update animation based on status
         animator.SetBool("isMoving", isMoving);
+
+        animator.SetBool("isFighting", isFighting);
+
+        animator.SetBool("isDying", isDying);
 
         // If there's a path and movement points left, continue moving
         if (path.Count > 0 && movementExpended < movementUnits)

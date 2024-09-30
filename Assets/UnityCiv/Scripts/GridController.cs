@@ -25,7 +25,10 @@ public class GridController : MonoBehaviour
 	public GameObject playerUnitModel;
 	public GameObject enemyUnitModel;
 	public List<HexagonGame> possibleSpawnHexes = new List<HexagonGame>();
-	public static int STARTING_UNITS = 2;
+	public int STARTING_UNITS = 2;
+	public int STARTING_UNIT_ATK = 6;
+	public int STARTING_UNIT_DEF = 4;
+	public int STARTING_UNIT_MAXHP = 10;
 
 
 	public Hexagon[,] hexagons;
@@ -413,6 +416,10 @@ public class GridController : MonoBehaviour
 			Unit unitComp = playerUnit.GetComponent<Unit>();
 			unitComp.coordinates = chosenHex.coordinates;
 			unitComp.owner = player;
+			unitComp.atk = STARTING_UNIT_ATK;
+			unitComp.def = STARTING_UNIT_DEF;
+			unitComp.maxHp = STARTING_UNIT_MAXHP;
+			unitComp.hp = STARTING_UNIT_MAXHP;
 			playerUnits.Add(playerUnit.GetComponent<Unit>());
 			neighbors.Remove(chosenHex);
 		}
@@ -436,6 +443,10 @@ public class GridController : MonoBehaviour
 			Unit unitComp = enemyUnit.GetComponent<Unit>();
 			unitComp.coordinates = chosenHex.coordinates;
 			unitComp.owner = enemy;
+			unitComp.atk = STARTING_UNIT_ATK;
+			unitComp.def = STARTING_UNIT_DEF;
+			unitComp.maxHp = STARTING_UNIT_MAXHP;
+			unitComp.hp = STARTING_UNIT_MAXHP;
 			enemyUnits.Add(unitComp);
 			neighbors.Remove(chosenHex);
 		}

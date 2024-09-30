@@ -12,7 +12,6 @@ public class HexagonGame : MonoBehaviour
     public GameObject hexType;
 
     public Vector3 rawPosition;
-    public List<Hexagon> neighbors;
     float lightenFactor = 1.5f;
 
     public int gCost;
