@@ -13,9 +13,6 @@ public class TurnManager : MonoBehaviour
     public Player enemy;
     public Player player;
 
-    public List<Unit> playerUnits;
-    public List<Unit> enemyUnits;
-
     private Unit selectedUnit;
     private City selectedCity;
 
@@ -34,8 +31,6 @@ public class TurnManager : MonoBehaviour
 
 
         // Load the unit lists from the GridController
-        playerUnits = gridController.playerUnits;
-        enemyUnits = gridController.enemyUnits;
         player = gridController.player;
         enemy = gridController.enemy;
     }
@@ -253,7 +248,7 @@ public class TurnManager : MonoBehaviour
 
     bool AllPlayerUnitsMoved()
     {
-        foreach (var unit in playerUnits)
+        foreach (var unit in player.units)
         {
             if (unit.movementExpended < unit.movementUnits)
             {
@@ -265,7 +260,7 @@ public class TurnManager : MonoBehaviour
 
     bool AllEnemyUnitsMoved()
     {
-        foreach (var unit in enemyUnits)
+        foreach (var unit in enemy.units)
         {
             if (unit.movementExpended < unit.movementUnits)
             {
@@ -277,7 +272,7 @@ public class TurnManager : MonoBehaviour
 
     public void EndPlayerTurn()
     {
-        foreach (var unit in playerUnits)
+        foreach (var unit in player.units)
         {
             unit.movementExpended = 0;  // Reset movement for all player units
         }
@@ -288,7 +283,7 @@ public class TurnManager : MonoBehaviour
 
     public void EndEnemyTurn()
     {
-        foreach (var unit in enemyUnits)
+        foreach (var unit in enemy.units)
         {
             unit.movementExpended = 0;  // Reset movement for all enemy units
         }

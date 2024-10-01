@@ -1592,6 +1592,8 @@ GameObject:
   - component: {fileID: 938268646}
   - component: {fileID: 938268648}
   - component: {fileID: 938268647}
+  - component: {fileID: 938268650}
+  - component: {fileID: 938268649}
   m_Layer: 5
   m_Name: NotifyPanel
   m_TagString: Untagged
@@ -1657,6 +1659,39 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 938268645}
   m_CullTransparentMesh: 1
+--- !u!225 &938268649
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 938268645}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
+--- !u!95 &938268650
+Animator:
+  serializedVersion: 5
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 938268645}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: bfa112c39080058458ddac8d54e33a22, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &963194225
 GameObject:
   m_ObjectHideFlags: 0
@@ -1954,6 +1989,10 @@ MonoBehaviour:
   playerUnitModel: {fileID: 4664239793625205480, guid: 64571d72e580ae147bfdc0d031cf93b1, type: 3}
   enemyUnitModel: {fileID: 124880852298735682, guid: 24a1f86b76759ba43ab1bbafa8d710e7, type: 3}
   possibleSpawnHexes: []
+  STARTING_UNITS: 2
+  STARTING_UNIT_ATK: 6
+  STARTING_UNIT_DEF: 4
+  STARTING_UNIT_MAXHP: 10
   noiseSeedAlt: 0
   noiseSeedForest: 0
   scale: {x: 9.98, y: 10, z: 8.66}

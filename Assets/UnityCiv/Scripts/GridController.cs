@@ -30,7 +30,6 @@ public class GridController : MonoBehaviour
 	public int STARTING_UNIT_DEF = 4;
 	public int STARTING_UNIT_MAXHP = 10;
 
-
 	public Hexagon[,] hexagons;
 	public HexagonGame[,] gameHexagons;
 
@@ -374,6 +373,7 @@ public class GridController : MonoBehaviour
 		playerCity = playerCityHex.gameObject.GetComponent<City>();
 		playerCity.gameHex = playerCityHex;
 		playerCity.owner = player;
+		playerCity.ctrl = this;
 
 		DestroyImmediate(playerCityModel.GetComponent<BoxCollider>(), true);
 
@@ -383,6 +383,8 @@ public class GridController : MonoBehaviour
 		enemyCity = enemyCityHex.gameObject.GetComponent<City>();
 		enemyCity.gameHex = enemyCityHex;
 		enemyCity.owner = enemy;
+		enemyCity.ctrl = this;
+
 
 		DestroyImmediate(enemyCityModel.GetComponent<BoxCollider>(), true);
 
@@ -420,7 +422,7 @@ public class GridController : MonoBehaviour
 			unitComp.def = STARTING_UNIT_DEF;
 			unitComp.maxHp = STARTING_UNIT_MAXHP;
 			unitComp.hp = STARTING_UNIT_MAXHP;
-			playerUnits.Add(playerUnit.GetComponent<Unit>());
+			player.units.Add(playerUnit.GetComponent<Unit>());
 			neighbors.Remove(chosenHex);
 		}
 
@@ -447,7 +449,7 @@ public class GridController : MonoBehaviour
 			unitComp.def = STARTING_UNIT_DEF;
 			unitComp.maxHp = STARTING_UNIT_MAXHP;
 			unitComp.hp = STARTING_UNIT_MAXHP;
-			enemyUnits.Add(unitComp);
+			enemy.units.Add(unitComp);
 			neighbors.Remove(chosenHex);
 		}
 	}
@@ -478,7 +480,63 @@ public class GridController : MonoBehaviour
 		return new Vector3Int(x, y, z);
 	}
 
+	public bool SpawnUnit(Player owner)
+	{
+		City city;
+		if (owner == player)
+			city = playerCity;
+		else
+			city = enemyCity;
 
 
+		List<HexagonGame> neighbors = GetGameNeighbors(city.gameHex);
+		for (int i = 0; i < neighbors.Count; i++)
+		{
+			if (neighbors[i].hexType.Equals(waterHex))
+			{
+				neighbors.RemoveAt(i);
+				i--;
+			}
+			else
+			{
+				foreach (Unit unit in owner.units)
+				{
+					if (unit.coordinates == neighbors[i].coordinates)
+					{
+						neighbors.RemoveAt(i);
+						i--;
+						break;
+					}
+				}
+			}
+		}
+		if (neighbors.Count > 0)
+		{
+			//TODO rendere queste delle variabili (3 , 2 , 5)
+			int atk = STARTING_UNIT_ATK + owner.unitUpgradeLevel*3;
+			int def = STARTING_UNIT_DEF + owner.unitUpgradeLevel*2;
+			int hp = STARTING_UNIT_MAXHP + owner.unitUpgradeLevel*5;
+			int mov = 3 + owner.unitUpgradeLevel;
+
+			HexagonGame chosenHex = neighbors[Random.Range(0, neighbors.Count)];
+			Vector3 pos = chosenHex.rawPosition;
+			pos.y = 2.36f;
+			GameObject playerUnit = Instantiate(playerUnitModel, pos, Quaternion.identity);
+
+			Unit unitComp = playerUnit.GetComponent<Unit>();
+			unitComp.coordinates = chosenHex.coordinates;
+			unitComp.owner = player;
+			unitComp.atk = atk;
+			unitComp.def = def;
+			unitComp.maxHp = hp;
+			unitComp.hp = hp;
+			unitComp.movementUnits = mov;
+			player.units.Add(playerUnit.GetComponent<Unit>());
+			
+			return true;
+		}
+
+		return false;
+	}
 }
 

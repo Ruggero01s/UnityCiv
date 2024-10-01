@@ -5,9 +5,13 @@ public class Player
 {
     public string playerName;
     public Color ownedColor; // Color assigned to the player's controlled hexes
+	public List<Unit> units = new List<Unit>();
 
     private List<HexagonGame> controlledHexes;
     private int funds;
+
+    public int unitUpgradeLevel;
+
 
     public Player(string name, Color color)
     {

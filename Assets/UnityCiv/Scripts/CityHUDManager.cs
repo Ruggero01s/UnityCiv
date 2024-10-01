@@ -68,8 +68,11 @@ public class CityHUDManager : MonoBehaviour
     {
         if (currentCity != null && currentCity.owner.SpendFunds(costToTrainUnit))
         {
-            currentCity.TrainUnit();
-            CloseCityHUD();  // Close the HUD after spending
+            if (currentCity.TrainUnit())
+                CloseCityHUD();  // Close the HUD after spending
+            else
+                StartCoroutine(hudController.NotifyText("No space to spawn new unit!"));
+
         }
         else
         {

@@ -13,7 +13,7 @@ public class HUDController : MonoBehaviour
     public GameObject notifyPanel;
     public TextMeshProUGUI textNotify;
 
-    private int notifyTime = 2;
+    private float notifyTime = 3f;
 
     public CityHUDManager cityHUDManager;
     public PlayerFundsHUD playerFundsHUD;
