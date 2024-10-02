@@ -41,12 +41,12 @@ public class CityHUDManager : MonoBehaviour
         if (currentCity != null && currentCity.owner.SpendFunds(costToUpgradeCity))
         {
             currentCity.UpgradeCity();
-            StartCoroutine(hudController.NotifyText("Defense increased!"));
+            StartCoroutine(hudController.Notify("Defense increased!"));
             CloseCityHUD();  // Close the HUD after spending
         }
         else
         {
-            StartCoroutine(hudController.NotifyText("Not enough Funds! Need " + costToUpgradeCity));
+            StartCoroutine(hudController.Notify("Not enough Funds! Need " + costToUpgradeCity));
         }
     }
 
@@ -55,12 +55,12 @@ public class CityHUDManager : MonoBehaviour
         if (currentCity != null && currentCity.owner.SpendFunds(costToUpgradeUnits))
         {
             currentCity.UpgradeUnits();
-            StartCoroutine(hudController.NotifyText("Units upgraded!"));
+            StartCoroutine(hudController.Notify("Units upgraded!"));
             CloseCityHUD();  // Close the HUD after spending
         }
         else
         {
-            StartCoroutine(hudController.NotifyText("Not enough Funds! Need " + costToUpgradeUnits));
+            StartCoroutine(hudController.Notify("Not enough Funds! Need " + costToUpgradeUnits));
         }
     }
 
@@ -69,14 +69,17 @@ public class CityHUDManager : MonoBehaviour
         if (currentCity != null && currentCity.owner.SpendFunds(costToTrainUnit))
         {
             if (currentCity.TrainUnit())
+            {
+                StartCoroutine(hudController.Notify("Trained Unit!"));
                 CloseCityHUD();  // Close the HUD after spending
+            }
             else
-                StartCoroutine(hudController.NotifyText("No space to spawn new unit!"));
+                StartCoroutine(hudController.Notify("No space to spawn new unit!"));
 
         }
         else
         {
-            StartCoroutine(hudController.NotifyText("Not enough Funds! Need " + costToTrainUnit));
+            StartCoroutine(hudController.Notify("Not enough Funds! Need " + costToTrainUnit));
         }
     }
 }

@@ -57,6 +57,8 @@ public class GridController : MonoBehaviour
 	public City enemyCity;
 
 	public TurnManager turnManager;
+	public HUDController HUDctrl;
+
 	private bool firstUpdate = false;
 
 	// Start is called before the first frame update
@@ -83,6 +85,8 @@ public class GridController : MonoBehaviour
 
 		// Find the TurnManager in the scene
 		turnManager = FindObjectOfType<TurnManager>();
+		HUDctrl = FindObjectOfType<HUDController>();
+
 		firstUpdate = true;
 	}
 
@@ -184,7 +188,7 @@ public class GridController : MonoBehaviour
 		float xCoord = coords.x * noiseSeedAlt;
 		float yCoord = coords.y * noiseSeedAlt;
 		float noiseValue = Mathf.PerlinNoise(xCoord, yCoord);
-		//Debug.Log(noiseValue);
+		// Debug.Log(noiseValue);
 		// Determine tile type based on noise value
 		if (noiseValue < 0.25f)
 		{
@@ -513,9 +517,9 @@ public class GridController : MonoBehaviour
 		if (neighbors.Count > 0)
 		{
 			//TODO rendere queste delle variabili (3 , 2 , 5)
-			int atk = STARTING_UNIT_ATK + owner.unitUpgradeLevel*3;
-			int def = STARTING_UNIT_DEF + owner.unitUpgradeLevel*2;
-			int hp = STARTING_UNIT_MAXHP + owner.unitUpgradeLevel*5;
+			int atk = STARTING_UNIT_ATK + owner.unitUpgradeLevel * 3;
+			int def = STARTING_UNIT_DEF + owner.unitUpgradeLevel * 2;
+			int hp = STARTING_UNIT_MAXHP + owner.unitUpgradeLevel * 5;
 			int mov = 3 + owner.unitUpgradeLevel;
 
 			HexagonGame chosenHex = neighbors[Random.Range(0, neighbors.Count)];
@@ -532,7 +536,7 @@ public class GridController : MonoBehaviour
 			unitComp.hp = hp;
 			unitComp.movementUnits = mov;
 			player.units.Add(playerUnit.GetComponent<Unit>());
-			
+
 			return true;
 		}
 

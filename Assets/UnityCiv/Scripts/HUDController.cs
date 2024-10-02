@@ -31,7 +31,8 @@ public class HUDController : MonoBehaviour
         turnManager.EndPlayerTurn();
     }
 
-    public IEnumerator NotifyText(string newText){
+    public IEnumerator Notify(string newText)
+    {
         textNotify.text = newText;
         notifyPanel.SetActive(true);
         yield return new WaitForSeconds(notifyTime);

@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 
 //TODO change all debug.log with notifications
-
+//TODO disable end turn when something (like combat, or movement) is happening HOW?
 public class TurnManager : MonoBehaviour
 {
     public enum TurnState { PlayerTurn, EnemyTurn }
@@ -17,10 +17,13 @@ public class TurnManager : MonoBehaviour
     private City selectedCity;
 
     private CityHUDManager cityHUDManager;
+    private HUDController HUDctrl;
     private GridController gridController;
 
     private int combatTime = 3;
     private int dyingTime = 3;
+
+    public bool disablePlayerInput = false;
 
 
     void Start()
@@ -28,6 +31,7 @@ public class TurnManager : MonoBehaviour
         currentTurn = TurnState.PlayerTurn;  // Player starts first
         gridController = FindObjectOfType<GridController>();
         cityHUDManager = FindObjectOfType<CityHUDManager>();
+        HUDctrl = FindObjectOfType<HUDController>();
 
 
         // Load the unit lists from the GridController
@@ -37,7 +41,6 @@ public class TurnManager : MonoBehaviour
 
     void Update()
     {
-
         HandleInput();  // Manage player input for selecting units and issuing commands
     }
 
@@ -78,7 +81,9 @@ public class TurnManager : MonoBehaviour
                             if (gridController.GetGameNeighbors(selectedUnitHex).Contains(enemyUnitHex))
                             {
                                 // Initiate combat between selected unit and enemy unit
+                                disablePlayerInput = true;
                                 InitiateCombat(selectedUnit, clickedEnemyUnit, enemyUnitHex);
+                                disablePlayerInput = false;
                             }
                         }
                     }
@@ -122,6 +127,7 @@ public class TurnManager : MonoBehaviour
         }
     }
 
+    //TODO do death method for units instead of destroy directly
     private void AttackCity(Unit attackingUnit, string tag) //TODO test
     {
         if (tag == "EnemyCity")
@@ -141,7 +147,7 @@ public class TurnManager : MonoBehaviour
                 if (attackingUnit.hp <= 0)
                 {
                     Destroy(attackingUnit.gameObject);  // Remove player unit from the game
-                    Debug.Log(attackingUnit.name + " has been defeated!");
+                    StartCoroutine(HUDctrl.Notify(attackingUnit.name + " has been defeated!"));
                 }
             }
         }
@@ -162,7 +168,7 @@ public class TurnManager : MonoBehaviour
                 if (attackingUnit.hp <= 0)
                 {
                     Destroy(attackingUnit.gameObject);  // Remove player unit from the game
-                    Debug.Log(attackingUnit.name + " has been defeated!");
+                    StartCoroutine(HUDctrl.Notify(attackingUnit.name + " has been defeated!"));
                 }
             }
         }
@@ -186,12 +192,11 @@ public class TurnManager : MonoBehaviour
         defender.isFighting = true;
         yield return new WaitForSeconds(delay);
 
-        Debug.Log("Combat initiated between " + attacker.name + " and " + defender.name);
+        StartCoroutine(HUDctrl.Notify("Combat initiated between " + attacker.name + " and " + defender.name));
 
         // Player unit attacks first
         defender.hp -= attacker.atk;
-        Debug.Log(attacker.name + " deals " + attacker.atk + " damage to " + defender.name);
-
+        StartCoroutine(HUDctrl.Notify(attacker.name + " deals " + attacker.atk + " damage to " + defender.name));
 
         yield return new WaitForSeconds(combatTime);
 
@@ -205,14 +210,14 @@ public class TurnManager : MonoBehaviour
             defender.isDying = true;  // No retaliation if enemy is defeated
             yield return new WaitForSeconds(dyingTime);
             Destroy(defender.gameObject);  // Remove enemy unit from the game
-            Debug.Log(defender.name + " has been defeated!");
+            StartCoroutine(HUDctrl.Notify(defender.name + " has been defeated!"));
         }
 
         if (!defenderDead)
         {
             // Enemy unit retaliates
             attacker.hp -= defender.def;
-            Debug.Log(defender.name + " retaliates with " + defender.def + " damage to " + attacker.name);
+            StartCoroutine(HUDctrl.Notify(defender.name + " retaliates with " + defender.def + " damage to " + attacker.name));
 
             // Check if player unit is still alive
             if (attacker.hp <= 0)
@@ -220,7 +225,7 @@ public class TurnManager : MonoBehaviour
                 attacker.isDying = true;  // No retaliation if enemy is defeated
                 yield return new WaitForSeconds(dyingTime);
                 Destroy(attacker.gameObject);  // Remove player unit from the game
-                Debug.Log(attacker.name + " has been defeated!");
+                StartCoroutine(HUDctrl.Notify(attacker.name + " has been defeated!"));
             }
         }
     }
