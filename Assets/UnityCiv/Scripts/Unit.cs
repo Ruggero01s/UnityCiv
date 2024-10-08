@@ -31,13 +31,16 @@ public class Unit : MonoBehaviour
 
     public bool isDying = false;
 
-    
+    public bool hasAttacked = false;
 
     private bool destinationReached = false; // Flag for destination status
+
+    GameObject highlight;
 
     void Start()
     {
         animator = GetComponent<Animator>();
+        highlight = gameObject.transform.Find("UnitHighlight").gameObject;
     }
 
     void Update()
@@ -129,5 +132,15 @@ public class Unit : MonoBehaviour
     public bool HasReachedDestination()
     {
         return destinationReached;
+    }
+
+    public void Highlight()
+    {
+        highlight.SetActive(true);
+    }
+
+    public void UnHighlight()
+    {
+        highlight.SetActive(false);
     }
 }

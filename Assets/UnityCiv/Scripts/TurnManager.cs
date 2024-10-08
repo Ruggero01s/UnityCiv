@@ -17,6 +17,8 @@ public class TurnManager : MonoBehaviour
     private City selectedCity;
 
     private CityHUDManager cityHUDManager;
+    private UnitHUDManager unitHUDManager;
+
     private HUDController HUDctrl;
     private GridController gridController;
 
@@ -31,6 +33,8 @@ public class TurnManager : MonoBehaviour
         currentTurn = TurnState.PlayerTurn;  // Player starts first
         gridController = FindObjectOfType<GridController>();
         cityHUDManager = FindObjectOfType<CityHUDManager>();
+        unitHUDManager = FindObjectOfType<UnitHUDManager>();
+
         HUDctrl = FindObjectOfType<HUDController>();
 
 
@@ -63,7 +67,15 @@ public class TurnManager : MonoBehaviour
                         // Select the player unit if it's not null and belongs to the player
                         if (clickedUnit != null && clickedUnit.owner == player)
                         {
+                            if(selectedUnit!=null)
+                                selectedUnit.UnHighlight();
                             selectedUnit = clickedUnit;
+                            selectedUnit.Highlight();
+                            unitHUDManager.OpenUnitHUD(selectedUnit);
+                            if(selectedCity != null){
+                                cityHUDManager.CloseCityHUD();
+                                selectedCity=null;       
+                            }
                         }
                     }
 
@@ -78,7 +90,7 @@ public class TurnManager : MonoBehaviour
                             HexagonGame enemyUnitHex = gridController.gameHexagons[clickedEnemyUnit.coordinates.x, clickedEnemyUnit.coordinates.y];
 
                             // Check if enemy is on a neighboring hex
-                            if (gridController.GetGameNeighbors(selectedUnitHex).Contains(enemyUnitHex))
+                            if (gridController.GetGameNeighbors(selectedUnitHex).Contains(enemyUnitHex) && !selectedUnit.hasAttacked)
                             {
                                 // Initiate combat between selected unit and enemy unit
                                 disablePlayerInput = true;
@@ -106,6 +118,11 @@ public class TurnManager : MonoBehaviour
                     if (hit.collider.CompareTag("City") && !EventSystem.current.IsPointerOverGameObject())
                     {
                         selectedCity = hit.collider.GetComponent<City>();
+                        if(selectedUnit != null){
+                            unitHUDManager.CloseUnitHUD();
+                            selectedUnit.UnHighlight();
+                            selectedUnit=null;       
+                        }
                         cityHUDManager.OpenCityHUD(selectedCity); // Open HUD for the city
                     }
 
@@ -128,12 +145,13 @@ public class TurnManager : MonoBehaviour
     }
 
     //TODO do death method for units instead of destroy directly
-    private void AttackCity(Unit attackingUnit, string tag) //TODO test
+    private void AttackCity(Unit attacker, string tag) //TODO test
     {
+        attacker.hasAttacked = true;
         if (tag == "EnemyCity")
         {
             // Example logic: reduce city health by the attacking unit's attack value
-            gridController.enemyCity.defenseHp -= attackingUnit.atk;
+            gridController.enemyCity.defenseHp -= attacker.atk;
 
             // Check if the city has been destroyed
             if (gridController.enemyCity.defenseHp <= 0)
@@ -142,19 +160,19 @@ public class TurnManager : MonoBehaviour
             }
             else
             {
-                attackingUnit.hp -= gridController.enemyCity.defenseAtk;
+                attacker.hp -= gridController.enemyCity.defenseAtk;
 
-                if (attackingUnit.hp <= 0)
+                if (attacker.hp <= 0)
                 {
-                    Destroy(attackingUnit.gameObject);  // Remove player unit from the game
-                    StartCoroutine(HUDctrl.Notify(attackingUnit.name + " has been defeated!"));
+                    Destroy(attacker.gameObject);  // Remove player unit from the game
+                    StartCoroutine(HUDctrl.Notify(attacker.name + " has been defeated!"));
                 }
             }
         }
         else
         {
             // Example logic: reduce city health by the attacking unit's attack value
-            gridController.playerCity.defenseHp -= attackingUnit.atk;
+            gridController.playerCity.defenseHp -= attacker.atk;
 
             // Check if the city has been destroyed
             if (gridController.playerCity.defenseHp <= 0)
@@ -163,12 +181,12 @@ public class TurnManager : MonoBehaviour
             }
             else
             {
-                attackingUnit.hp -= gridController.playerCity.defenseAtk;
+                attacker.hp -= gridController.playerCity.defenseAtk;
 
-                if (attackingUnit.hp <= 0)
+                if (attacker.hp <= 0)
                 {
-                    Destroy(attackingUnit.gameObject);  // Remove player unit from the game
-                    StartCoroutine(HUDctrl.Notify(attackingUnit.name + " has been defeated!"));
+                    Destroy(attacker.gameObject);  // Remove player unit from the game
+                    StartCoroutine(HUDctrl.Notify(attacker.name + " has been defeated!"));
                 }
             }
         }
@@ -176,6 +194,7 @@ public class TurnManager : MonoBehaviour
 
     void InitiateCombat(Unit attacker, Unit defender, HexagonGame defenderHex) //TODO terrain/weather modifiers
     {
+        attacker.hasAttacked = true;
         // Start coroutines to rotate both units towards each other
         StartCoroutine(RotateTowards(attacker, defender.transform.position));
         StartCoroutine(RotateTowards(defender, attacker.transform.position));
