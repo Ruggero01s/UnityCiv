@@ -57,7 +57,7 @@ public class GridController : MonoBehaviour
 	public City enemyCity;
 
 	public TurnManager turnManager;
-	public HUDController HUDctrl;
+	public GeneralHUDController HUDctrl;
 
 	private bool firstUpdate = false;
 
@@ -85,7 +85,7 @@ public class GridController : MonoBehaviour
 
 		// Find the TurnManager in the scene
 		turnManager = FindObjectOfType<TurnManager>();
-		HUDctrl = FindObjectOfType<HUDController>();
+		HUDctrl = FindObjectOfType<GeneralHUDController>();
 
 		firstUpdate = true;
 	}

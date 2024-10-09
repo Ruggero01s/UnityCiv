@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using Random = System.Random;
 
 //TODO change all debug.log with notifications
 //TODO disable end turn when something (like combat, or movement) is happening HOW?
@@ -18,14 +19,19 @@ public class TurnManager : MonoBehaviour
 
     private CityHUDManager cityHUDManager;
     private UnitHUDManager unitHUDManager;
+    private WeatherHUDManager weatherHUDManager;
 
-    private HUDController HUDctrl;
+    private GeneralHUDController HUDctrl;
     private GridController gridController;
 
     private int combatTime = 3;
     private int dyingTime = 3;
 
     public bool disablePlayerInput = false;
+
+    public enum WeatherState {Clear, Rain, Snow}
+
+    public Queue<WeatherState> weatherQueue;
 
 
     void Start()
@@ -34,13 +40,22 @@ public class TurnManager : MonoBehaviour
         gridController = FindObjectOfType<GridController>();
         cityHUDManager = FindObjectOfType<CityHUDManager>();
         unitHUDManager = FindObjectOfType<UnitHUDManager>();
+        weatherHUDManager = FindObjectOfType<WeatherHUDManager>();
 
-        HUDctrl = FindObjectOfType<HUDController>();
+        HUDctrl = FindObjectOfType<GeneralHUDController>();
 
 
         // Load the unit lists from the GridController
         player = gridController.player;
         enemy = gridController.enemy;
+
+        Array values = Enum.GetValues(typeof(WeatherState));
+        Random random = new Random();
+        WeatherState randomBar = (WeatherState)values.GetValue(random.Next(values.Length));
+
+        weatherQueue = new Queue<WeatherState>();
+        weatherQueue.Enqueue((WeatherState)values.GetValue(random.Next(values.Length)));
+        weatherQueue.Enqueue((WeatherState)values.GetValue(random.Next(values.Length)));
     }
 
     void Update()
@@ -299,6 +314,7 @@ public class TurnManager : MonoBehaviour
         foreach (var unit in player.units)
         {
             unit.movementExpended = 0;  // Reset movement for all player units
+            unit.hasAttacked = false;
         }
 
         currentTurn = TurnState.EnemyTurn;
@@ -319,6 +335,7 @@ public class TurnManager : MonoBehaviour
     void StartPlayerTurn()
     {
         player.GenerateFundsPerTurn();
+        ProgressWeather();
         // Any logic to prepare the player’s turn, like refreshing UI
         Debug.Log("Player's turn starts");
     }
@@ -329,5 +346,19 @@ public class TurnManager : MonoBehaviour
         Debug.Log("Enemy's turn starts");
         // Implement AI behavior here
         EndEnemyTurn();
+    }
+
+    void ProgressWeather()
+    {
+        Array values = Enum.GetValues(typeof(WeatherState));
+        Random random = new Random();
+        WeatherState randomWeather = (WeatherState)values.GetValue(random.Next(values.Length));
+
+        weatherQueue.Enqueue((WeatherState)values.GetValue(random.Next(values.Length)));
+        weatherQueue.Enqueue((WeatherState)values.GetValue(random.Next(values.Length)));
+        weatherQueue.Dequeue();
+        weatherQueue.Enqueue(randomWeather);
+
+        weatherHUDManager.UpdateQueue(weatherQueue);
     }
 }

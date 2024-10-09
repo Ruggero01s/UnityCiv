@@ -8,7 +8,9 @@ public class Player
 	public List<Unit> units = new List<Unit>();
 
     private List<HexagonGame> controlledHexes;
-    private int funds;
+    private int funds = 0;
+
+    private int score = 0;
 
     public int unitUpgradeLevel;
 
@@ -19,6 +21,7 @@ public class Player
         ownedColor = color;
         controlledHexes = new List<HexagonGame>();
         funds = 0;
+        score = 0;
     }
 
     // Adds a hex to the player's controlled list
@@ -43,7 +46,9 @@ public class Player
     public void GenerateFundsPerTurn()
     {
         // Example: 10 units of funds per hex
-        funds += controlledHexes.Count * 10;
+        int fundsToGenerate = controlledHexes.Count * 10;
+        funds += fundsToGenerate;
+        score += fundsToGenerate;
     }
 
     // Function to spend funds (e.g., on units or buildings)
@@ -60,5 +65,10 @@ public class Player
     public int GetFunds()
     {
         return funds;
+    }
+
+    public int GetScore()
+    {
+        return score;
     }
 }

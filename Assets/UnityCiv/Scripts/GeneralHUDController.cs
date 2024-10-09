@@ -5,7 +5,7 @@ using UnityEngine.UI;
 using UnityEngine.UIElements;
 using Button = UnityEngine.UI.Button;
 
-public class HUDController : MonoBehaviour
+public class GeneralHUDController : MonoBehaviour
 {
     public Button endTurnButton;  // Reference to the End Turn Button
     public TurnManager turnManager;  // Reference to your GridController script
@@ -14,9 +14,6 @@ public class HUDController : MonoBehaviour
     public TextMeshProUGUI textNotify;
 
     private float notifyTime = 3f;
-
-    public CityHUDManager cityHUDManager;
-    public PlayerFundsHUD playerFundsHUD;
 
     void Start()
     {

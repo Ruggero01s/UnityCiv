@@ -9,9 +9,10 @@ public class City : MonoBehaviour
     public GridController ctrl;
     public Player owner;
 
-    public int defenseAtk;
+    public int defenseAtk = 5;
 
-    public int defenseHp;
+    public int defenseHp = 50;
+
 
     public void UpgradeCity()
     {
@@ -28,6 +29,7 @@ public class City : MonoBehaviour
 
         foreach (Unit unit in owner.units)
         {
+            unit.maxHp += 5;
             unit.hp += 5;
             unit.atk += 3;
             unit.def += 2;

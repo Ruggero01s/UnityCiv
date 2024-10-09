@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class UnitHUDManager : MonoBehaviour
 {
-    public HUDController hudController;
+    public GeneralHUDController hudController;
     public GameObject unitHUDPanel;  // Reference to the City HUD panel
     private Unit currentUnit;        // The city currently selected
 

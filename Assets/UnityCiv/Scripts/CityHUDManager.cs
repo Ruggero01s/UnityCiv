@@ -1,10 +1,12 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro; // If using TextMeshPro
+
 
 public class CityHUDManager : MonoBehaviour
 {
 
-    public HUDController hudController;
+    public GeneralHUDController hudController;
     public GameObject cityHUDPanel;  // Reference to the City HUD panel
     private City currentCity;        // The city currently selected
     private int costToUpgradeCity = 100;
@@ -13,6 +15,10 @@ public class CityHUDManager : MonoBehaviour
     public Button upgradeCityButton;
     public Button upgradeUnitsButton;
     public Button trainUnitButton;
+    public TextMeshProUGUI hpText; // For TextMeshPro
+    public TextMeshProUGUI atkText; // For TextMeshPro
+    public TextMeshProUGUI unitLevelText; // For TextMeshPro
+
 
 
     void Start()
@@ -21,6 +27,16 @@ public class CityHUDManager : MonoBehaviour
         upgradeUnitsButton.onClick.AddListener(SpendFundsOnUpgradeUnits);
         trainUnitButton.onClick.AddListener(SpendFundsOnTrainUnit);
         cityHUDPanel.SetActive(false);  // Hide the HUD initially
+    }
+
+    void Update()
+    {
+        if (cityHUDPanel.activeSelf && currentCity != null)
+        {
+            hpText.text = "HP: " + currentCity.defenseHp;
+            atkText.text = "DEF: " +currentCity.defenseAtk;
+            unitLevelText.text = "Unit LV: " + currentCity.owner.unitUpgradeLevel; 
+        }
     }
 
     public void OpenCityHUD(City city)

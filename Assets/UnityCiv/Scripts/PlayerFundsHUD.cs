@@ -7,6 +7,9 @@ public class PlayerFundsHUD : MonoBehaviour
     public Player player;
     public TextMeshProUGUI fundsText; // For TextMeshPro
 
+    public TextMeshProUGUI scoreText; // For TextMeshPro
+
+
     private bool firstUpdate = true;
 
     private GridController gridController;
@@ -17,10 +20,14 @@ public class PlayerFundsHUD : MonoBehaviour
         fundsText.text = "Funds: " + newFunds;
     }
 
+    public void UpdateScore(int newScore)
+    {
+        scoreText.text = "Score: " + newScore;
+    }
+
     void Start()
     {
         gridController = FindObjectOfType<GridController>();
-        
     }
 
     void Update()
@@ -31,5 +38,6 @@ public class PlayerFundsHUD : MonoBehaviour
             firstUpdate = false;
         }
         UpdateFunds(player.GetFunds()); // Initialize with current funds
+        UpdateScore(player.GetScore());
     }
 }
