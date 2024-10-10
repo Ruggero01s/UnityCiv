@@ -420,6 +420,7 @@ public class GridController : MonoBehaviour
 			GameObject playerUnit = Instantiate(playerUnitModel, pos, Quaternion.identity);
 
 			Unit unitComp = playerUnit.GetComponent<Unit>();
+			chosenHex.tag="Occupied";
 			unitComp.coordinates = chosenHex.coordinates;
 			unitComp.owner = player;
 			unitComp.atk = STARTING_UNIT_ATK;
@@ -447,6 +448,7 @@ public class GridController : MonoBehaviour
 			GameObject enemyUnit = Instantiate(enemyUnitModel, pos, Quaternion.identity);
 
 			Unit unitComp = enemyUnit.GetComponent<Unit>();
+			chosenHex.tag="Occupied";
 			unitComp.coordinates = chosenHex.coordinates;
 			unitComp.owner = enemy;
 			unitComp.atk = STARTING_UNIT_ATK;

@@ -6,7 +6,7 @@ using UnityEngine.EventSystems;
 using Random = System.Random;
 
 //TODO change all debug.log with notifications
-//TODO disable end turn when something (like combat, or movement) is happening HOW?
+//TODO disable end turn when combat is happening
 public class TurnManager : MonoBehaviour
 {
     public enum TurnState { PlayerTurn, EnemyTurn }
@@ -29,10 +29,11 @@ public class TurnManager : MonoBehaviour
 
     public bool disablePlayerInput = false;
 
-    public enum WeatherState {Clear, Rain, Snow}
+    public enum WeatherState { Clear, Rain, Snow }
 
     public Queue<WeatherState> weatherQueue;
 
+    public List<HexagonGame> toRestore;
 
     void Start()
     {
@@ -50,8 +51,7 @@ public class TurnManager : MonoBehaviour
         enemy = gridController.enemy;
 
         Array values = Enum.GetValues(typeof(WeatherState));
-        Random random = new Random();
-        WeatherState randomBar = (WeatherState)values.GetValue(random.Next(values.Length));
+        Random random = new();
 
         weatherQueue = new Queue<WeatherState>();
         weatherQueue.Enqueue((WeatherState)values.GetValue(random.Next(values.Length)));
@@ -65,6 +65,8 @@ public class TurnManager : MonoBehaviour
 
     void HandleInput()
     {
+        if (disablePlayerInput) return;
+
         if (currentTurn == TurnState.PlayerTurn)
         {
             if (Input.GetMouseButtonUp(0))
@@ -82,14 +84,15 @@ public class TurnManager : MonoBehaviour
                         // Select the player unit if it's not null and belongs to the player
                         if (clickedUnit != null && clickedUnit.owner == player)
                         {
-                            if(selectedUnit!=null)
+                            if (selectedUnit != null)
                                 selectedUnit.UnHighlight();
                             selectedUnit = clickedUnit;
                             selectedUnit.Highlight();
                             unitHUDManager.OpenUnitHUD(selectedUnit);
-                            if(selectedCity != null){
+                            if (selectedCity != null)
+                            {
                                 cityHUDManager.CloseCityHUD();
-                                selectedCity=null;       
+                                selectedCity = null;
                             }
                         }
                     }
@@ -133,10 +136,11 @@ public class TurnManager : MonoBehaviour
                     if (hit.collider.CompareTag("City") && !EventSystem.current.IsPointerOverGameObject())
                     {
                         selectedCity = hit.collider.GetComponent<City>();
-                        if(selectedUnit != null){
+                        if (selectedUnit != null)
+                        {
                             unitHUDManager.CloseUnitHUD();
                             selectedUnit.UnHighlight();
-                            selectedUnit=null;       
+                            selectedUnit = null;
                         }
                         cityHUDManager.OpenCityHUD(selectedCity); // Open HUD for the city
                     }
@@ -160,7 +164,7 @@ public class TurnManager : MonoBehaviour
     }
 
     //TODO do death method for units instead of destroy directly
-    private void AttackCity(Unit attacker, string tag) //TODO test
+    private void AttackCity(Unit attacker, string tag) //TODO test // add animations // add ignoreUserinput
     {
         attacker.hasAttacked = true;
         if (tag == "EnemyCity")
@@ -192,7 +196,7 @@ public class TurnManager : MonoBehaviour
             // Check if the city has been destroyed
             if (gridController.playerCity.defenseHp <= 0)
             {
-                //TODO implement win 
+                //TODO implement lose 
             }
             else
             {
@@ -207,30 +211,66 @@ public class TurnManager : MonoBehaviour
         }
     }
 
-    void InitiateCombat(Unit attacker, Unit defender, HexagonGame defenderHex) //TODO terrain/weather modifiers
+    void InitiateCombat(Unit attacker, Unit defender, HexagonGame defenderHex)
     {
         attacker.hasAttacked = true;
+        disablePlayerInput = true;
+        HUDctrl.UpdateEndTurnButtonState(!disablePlayerInput);
+
         // Start coroutines to rotate both units towards each other
         StartCoroutine(RotateTowards(attacker, defender.transform.position));
         StartCoroutine(RotateTowards(defender, attacker.transform.position));
 
         // Delay combat slightly to allow the units to rotate before attacking
-        StartCoroutine(DelayedCombat(attacker, defender, 0.5f));  // 0.5 second delay for example
+        StartCoroutine(DelayedCombat(attacker, defender, 0.5f, defenderHex));
+
+        StartCoroutine(HUDctrl.Notify("Combat initiated between " + attacker.owner.playerName + " soldier and " + defender.owner.playerName + " unit"));
     }
 
-    IEnumerator DelayedCombat(Unit attacker, Unit defender, float delay)
+    IEnumerator DelayedCombat(Unit attacker, Unit defender, float delay, HexagonGame defenderHex)
     {
         bool defenderDead = false;
-
         attacker.isFighting = true;
         defender.isFighting = true;
+
         yield return new WaitForSeconds(delay);
 
-        StartCoroutine(HUDctrl.Notify("Combat initiated between " + attacker.name + " and " + defender.name));
+        // Calculate Terrain and Weather Modifiers
+        float attackModifier = 1f;  // Default no modifier
+        float defenseModifier = 1f; // Default no modifier
 
-        // Player unit attacks first
-        defender.hp -= attacker.atk;
-        StartCoroutine(HUDctrl.Notify(attacker.name + " deals " + attacker.atk + " damage to " + defender.name));
+        // Determine Terrain-based Modifiers
+        if (defenderHex.hexType.Equals(gridController.mountainHex))
+        {
+            attackModifier -= 0.2f;
+            defenseModifier += 0.3f; // Mountain gives defender 30% defense boost
+        }
+        else if (defenderHex.hexType.Equals(gridController.forestHex))
+        {
+            defenseModifier += 0.2f; // Forest gives defender 20% defense boost
+        }
+
+        // Determine Weather-based Modifiers
+        WeatherState currentWeather = weatherQueue.Peek();  // Get current weather
+
+        if (currentWeather == WeatherState.Rain)
+        {
+            // Rain could weaken attackers (especially ranged units)
+            attackModifier -= 0.1f;  // 10% attack penalty for rain
+        }
+        else if (currentWeather == WeatherState.Snow)
+        {
+            attackModifier -= 0.15f;  // 15% attack penalty for snow
+            defenseModifier += 0.1f;  // Snow could increase defense as units are harder to hit
+        }
+        // Clear weather gives no modifiers
+
+        // Attacker goes first, applying modifiers
+        int finalAttackDamage = Mathf.RoundToInt(attacker.atk * attackModifier);
+        int finalDefenseValue = Mathf.RoundToInt(defender.def * defenseModifier);
+
+        defender.hp -= finalAttackDamage;
+        StartCoroutine(HUDctrl.Notify(attacker.owner.playerName + " soldier deals " + finalAttackDamage + " damage to defender"));
 
         yield return new WaitForSeconds(combatTime);
 
@@ -241,28 +281,33 @@ public class TurnManager : MonoBehaviour
         if (defender.hp <= 0)
         {
             defenderDead = true;
-            defender.isDying = true;  // No retaliation if enemy is defeated
+            defender.isDying = true;
             yield return new WaitForSeconds(dyingTime);
             Destroy(defender.gameObject);  // Remove enemy unit from the game
             StartCoroutine(HUDctrl.Notify(defender.name + " has been defeated!"));
         }
 
-        if (!defenderDead)
+        if (!defenderDead) // No retaliation if enemy is defeated
         {
             // Enemy unit retaliates
-            attacker.hp -= defender.def;
-            StartCoroutine(HUDctrl.Notify(defender.name + " retaliates with " + defender.def + " damage to " + attacker.name));
+            attacker.hp -= finalDefenseValue;  // Apply defender's attack modified by the terrain/weather
+
+            StartCoroutine(HUDctrl.Notify(defender.owner.playerName + " unit retaliates with " + finalDefenseValue + " damage to attacker"));
 
             // Check if player unit is still alive
             if (attacker.hp <= 0)
             {
-                attacker.isDying = true;  // No retaliation if enemy is defeated
+                attacker.isDying = true;
                 yield return new WaitForSeconds(dyingTime);
                 Destroy(attacker.gameObject);  // Remove player unit from the game
                 StartCoroutine(HUDctrl.Notify(attacker.name + " has been defeated!"));
             }
         }
+
+        disablePlayerInput = false;  // Re-enable player input once combat is done
+        HUDctrl.UpdateEndTurnButtonState(!disablePlayerInput);  // Update the End Turn Button state
     }
+
 
 
     IEnumerator RotateTowards(Unit unit, Vector3 targetPosition)
@@ -337,7 +382,7 @@ public class TurnManager : MonoBehaviour
         player.GenerateFundsPerTurn();
         ProgressWeather();
         // Any logic to prepare the player’s turn, like refreshing UI
-        Debug.Log("Player's turn starts");
+        StartCoroutine(HUDctrl.Notify(player.playerName + " turn starts"));
     }
 
     void StartEnemyTurn()

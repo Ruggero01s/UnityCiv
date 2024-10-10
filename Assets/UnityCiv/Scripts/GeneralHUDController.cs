@@ -35,4 +35,9 @@ public class GeneralHUDController : MonoBehaviour
         yield return new WaitForSeconds(notifyTime);
         notifyPanel.SetActive(false);
     }
+
+    public void UpdateEndTurnButtonState(bool isEnabled)
+    {
+        endTurnButton.interactable = isEnabled;
+    }
 }

@@ -93,7 +93,6 @@ public class Pathfinding
             currentNode = currentNode.cameFromHex;
         }
         path.Reverse();
-        path.Remove(path[0]);
         return path;
     }
 

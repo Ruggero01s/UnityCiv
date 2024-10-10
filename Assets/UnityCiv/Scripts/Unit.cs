@@ -1,5 +1,7 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class Unit : MonoBehaviour
@@ -35,6 +37,8 @@ public class Unit : MonoBehaviour
 
     private bool destinationReached = false; // Flag for destination status
 
+    private int pathCounter = 1;
+
     GameObject highlight;
 
     void Start()
@@ -53,7 +57,7 @@ public class Unit : MonoBehaviour
         animator.SetBool("isDying", isDying);
 
         // If there's a path and movement points left, continue moving
-        if (path.Count > 0 && movementExpended < movementUnits)
+        if (pathCounter < path.Count && movementExpended < movementUnits)
         {
             TravelPath();
         }
@@ -62,6 +66,7 @@ public class Unit : MonoBehaviour
             // If no more path or movement points left, stop moving
             isMoving = false;
             path.Clear();
+            pathCounter = 1;
         }
     }
 
@@ -71,18 +76,19 @@ public class Unit : MonoBehaviour
         isMoving = true;
 
         // Move toward the next tile if it's not reached
-        if (Vector3.Distance(transform.position, path[0].rawPosition) < 2.37f)
+        if (Vector3.Distance(transform.position, path[pathCounter].rawPosition) < 2.37f)
         {
-            // Once a tile is reached, update the unit's current coordinates and expend movement
-            coordinates = path[0].coordinates;
-            path[0].ClaimHex(owner);
+            // Once a tile is reached, update the unit's current coordinates and expend movement           
+            coordinates = path[pathCounter].coordinates;
+            path[pathCounter].ClaimHex(owner);
             movementExpended++;    // Reduce movement units as you move
             
-            // Remove the first tile from the path (as it is now reached)
-            path.RemoveAt(0);
-
+            path[pathCounter].tag = "Occupied";
+            path[pathCounter-1].tag = "MovableTerrain"; 
+            
+            pathCounter++;
             // If the path is empty after removal, the destination is reached
-            if (path.Count == 0)
+            if (pathCounter >= path.Count)
             {
                 destinationReached = true;
                 isMoving = false;
@@ -91,7 +97,7 @@ public class Unit : MonoBehaviour
         else
         {
             // If not reached, move towards the next tile
-            MoveTo(path[0]);
+            MoveTo(path[pathCounter]);
         }
     }
 
