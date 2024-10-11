@@ -58,20 +58,26 @@ public class Pathfinding
             {
                 if (neighbour != null)
                 {
-                    if (!neighbour.hexType.Equals(gridController.waterHex))
+                    if (neighbour.CompareTag("Occupied") && neighbour == endNode)
+                        return CalculatePath(currentNode);
+                    else
                     {
-                        if (closedList.Contains(neighbour)) continue;
-
-                        int tentativeGCost = currentNode.gCost + CalculateDistanceCost(currentNode, neighbour);
-                        if (tentativeGCost < neighbour.gCost)
+                        if (neighbour.CompareTag("MovableTerrain"))
                         {
-                            neighbour.cameFromHex = currentNode;
-                            neighbour.gCost = tentativeGCost;
-                            neighbour.hCost = CalculateDistanceCost(neighbour, endNode);
-                            neighbour.CalcFCost();
 
-                            if (!openList.Contains(neighbour))
-                                openList.Add(neighbour);
+                            if (closedList.Contains(neighbour)) continue;
+
+                            int tentativeGCost = currentNode.gCost + CalculateDistanceCost(currentNode, neighbour);
+                            if (tentativeGCost < neighbour.gCost)
+                            {
+                                neighbour.cameFromHex = currentNode;
+                                neighbour.gCost = tentativeGCost;
+                                neighbour.hCost = CalculateDistanceCost(neighbour, endNode);
+                                neighbour.CalcFCost();
+
+                                if (!openList.Contains(neighbour))
+                                    openList.Add(neighbour);
+                            }
                         }
                     }
                 }

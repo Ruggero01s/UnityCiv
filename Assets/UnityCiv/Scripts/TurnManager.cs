@@ -33,8 +33,6 @@ public class TurnManager : MonoBehaviour
 
     public Queue<WeatherState> weatherQueue;
 
-    public List<HexagonGame> toRestore;
-
     void Start()
     {
         currentTurn = TurnState.PlayerTurn;  // Player starts first
@@ -60,6 +58,14 @@ public class TurnManager : MonoBehaviour
 
     void Update()
     {
+        if (currentTurn == TurnState.EnemyTurn)
+        {
+            HUDctrl.UpdateEndTurnButtonState(false);
+        }
+        else
+        {
+            HUDctrl.UpdateEndTurnButtonState(!disablePlayerInput);
+        }
         HandleInput();  // Manage player input for selecting units and issuing commands
     }
 
@@ -215,7 +221,6 @@ public class TurnManager : MonoBehaviour
     {
         attacker.hasAttacked = true;
         disablePlayerInput = true;
-        HUDctrl.UpdateEndTurnButtonState(!disablePlayerInput);
 
         // Start coroutines to rotate both units towards each other
         StartCoroutine(RotateTowards(attacker, defender.transform.position));
@@ -280,11 +285,13 @@ public class TurnManager : MonoBehaviour
         // Check if enemy unit is still alive
         if (defender.hp <= 0)
         {
+            StartCoroutine(HUDctrl.Notify(defender.name + " has been defeated!"));
             defenderDead = true;
             defender.isDying = true;
             yield return new WaitForSeconds(dyingTime);
-            Destroy(defender.gameObject);  // Remove enemy unit from the game
-            StartCoroutine(HUDctrl.Notify(defender.name + " has been defeated!"));
+            defender.owner.units.Remove(defender);
+            if (defender.gameObject != null)
+                Destroy(defender.gameObject);  // Remove enemy unit from the game
         }
 
         if (!defenderDead) // No retaliation if enemy is defeated
@@ -297,15 +304,17 @@ public class TurnManager : MonoBehaviour
             // Check if player unit is still alive
             if (attacker.hp <= 0)
             {
+                StartCoroutine(HUDctrl.Notify(attacker.name + " has been defeated!"));
                 attacker.isDying = true;
                 yield return new WaitForSeconds(dyingTime);
-                Destroy(attacker.gameObject);  // Remove player unit from the game
-                StartCoroutine(HUDctrl.Notify(attacker.name + " has been defeated!"));
+                attacker.owner.units.Remove(attacker);
+                if (attacker.gameObject != null)
+                    Destroy(attacker.gameObject);  // Remove player unit from the game
             }
         }
 
         disablePlayerInput = false;  // Re-enable player input once combat is done
-        HUDctrl.UpdateEndTurnButtonState(!disablePlayerInput);  // Update the End Turn Button state
+        // Update the End Turn Button state
     }
 
 
@@ -363,14 +372,15 @@ public class TurnManager : MonoBehaviour
         }
 
         currentTurn = TurnState.EnemyTurn;
-        StartEnemyTurn();  // Start the enemy turn
+        StartCoroutine(StartEnemyTurn());  // Start the enemy turn
     }
 
     public void EndEnemyTurn()
     {
         foreach (var unit in enemy.units)
         {
-            unit.movementExpended = 0;  // Reset movement for all enemy units
+            unit.movementExpended = 0; // Reset movement for all enemy units
+            unit.hasAttacked = false;
         }
 
         currentTurn = TurnState.PlayerTurn;
@@ -385,13 +395,105 @@ public class TurnManager : MonoBehaviour
         StartCoroutine(HUDctrl.Notify(player.playerName + " turn starts"));
     }
 
-    void StartEnemyTurn()
+    IEnumerator StartEnemyTurn()
     {
-        // Any AI logic for enemy turn
-        Debug.Log("Enemy's turn starts");
-        // Implement AI behavior here
+        StartCoroutine(HUDctrl.Notify(enemy.playerName + " turn starts"));
+
+        enemy.GenerateFundsPerTurn();
+
+        // Step 1: Loop through each enemy unit to move them
+        foreach (Unit enemyUnit in enemy.units)
+        {
+            // Skip units that have already moved
+            if (enemyUnit.movementExpended >= enemyUnit.movementUnits)
+                continue;
+
+            // Find the nearest player unit
+            Unit closestPlayerUnit = null;
+            float shortestDistance = float.MaxValue;
+
+            foreach (Unit playerUnit in player.units)
+            {
+                float distance = Vector3.Distance(enemyUnit.transform.position, playerUnit.transform.position);
+                if (distance < shortestDistance)
+                {
+                    shortestDistance = distance;
+                    closestPlayerUnit = playerUnit;
+                }
+            }
+
+            // Step 2: Move towards the closest player unit if not adjacent
+            HexagonGame enemyUnitHex = gridController.gameHexagons[enemyUnit.coordinates.x, enemyUnit.coordinates.y];
+            HexagonGame closestPlayerHex = gridController.gameHexagons[closestPlayerUnit.coordinates.x, closestPlayerUnit.coordinates.y];
+
+            if (!gridController.GetGameNeighbors(enemyUnitHex).Contains(closestPlayerHex))
+            {
+                // Move towards the closest player unit if not in range to attack
+                if (enemyUnit.movementExpended < enemyUnit.movementUnits)
+                {
+                    // Find path and move closer to the player unit
+                    List<HexagonGame> pathToPlayer = gridController.pathfinder.FindPath(enemyUnitHex, closestPlayerHex);
+                    if (pathToPlayer != null && pathToPlayer.Count > 0)
+                    {
+                        enemyUnit.SetDestination(pathToPlayer);
+                    }
+                }
+            }
+
+            yield return new WaitForSeconds(0.5f);
+        }
+
+        // Step 3: After moving, check for nearby player units and attack if possible
+        foreach (Unit enemyUnit in enemy.units)
+        {
+            // Skip units that have already attacked
+            if (enemyUnit.hasAttacked)
+                continue;
+
+            // Find the nearest player unit again
+            Unit closestPlayerUnit = null;
+            float shortestDistance = float.MaxValue;
+
+            foreach (Unit playerUnit in player.units)
+            {
+                float distance = Vector3.Distance(enemyUnit.transform.position, playerUnit.transform.position);
+                if (distance < shortestDistance)
+                {
+                    shortestDistance = distance;
+                    closestPlayerUnit = playerUnit;
+                }
+            }
+
+            // Check if the enemy unit is adjacent to the player unit for an attack
+            HexagonGame enemyUnitHex = gridController.gameHexagons[enemyUnit.coordinates.x, enemyUnit.coordinates.y];
+            HexagonGame closestPlayerHex = gridController.gameHexagons[closestPlayerUnit.coordinates.x, closestPlayerUnit.coordinates.y];
+
+            if (gridController.GetGameNeighbors(enemyUnitHex).Contains(closestPlayerHex))
+            {
+                // If adjacent, initiate combat with the closest player unit
+                InitiateCombat(enemyUnit, closestPlayerUnit, closestPlayerHex);
+            }
+        }
+
+        bool somethingStillMoving = false;  //TODO test this more
+        do 
+        {
+            somethingStillMoving = false;
+            foreach (Unit enemyUnit in enemy.units)
+            {
+                if (enemyUnit.isMoving || enemyUnit.isFighting || enemyUnit.isDying){
+                    somethingStillMoving = true;
+                    break;
+                }
+            }
+            yield return new WaitForSeconds(1f);
+        }while(somethingStillMoving);
+
+        // Step 4: End the enemy turn after processing all units
         EndEnemyTurn();
     }
+
+
 
     void ProgressWeather()
     {

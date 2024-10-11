@@ -2759,6 +2759,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   currentTurn: 0
   disablePlayerInput: 0
+  toRestore: []
 --- !u!1 &1355015287
 GameObject:
   m_ObjectHideFlags: 0
@@ -3086,7 +3087,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b543ee54cf175c14a98da3f03c3eb21c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  hudController: {fileID: 0}
+  hudController: {fileID: 1421089101}
   weatherImages:
   - {fileID: 647548434}
   - {fileID: 1077089244}

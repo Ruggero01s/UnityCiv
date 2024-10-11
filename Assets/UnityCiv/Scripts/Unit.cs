@@ -19,7 +19,7 @@ public class Unit : MonoBehaviour
     private Animator animator;
     
     // The path the unit will follow (set externally when a destination is selected)
-    public List<HexagonGame> path = new List<HexagonGame>();
+    public List<HexagonGame> path;
 
     public Vector2Int coordinates;  // Current hex grid coordinates
     public Vector3 rawPosition;     // Actual position on the map
@@ -121,7 +121,8 @@ public class Unit : MonoBehaviour
     public void SetDestination(List<HexagonGame> newPath)
     {
         // Reset movement expended for the turn and set new path
-        path = newPath;
+        path = newPath.Take(movementUnits - movementExpended+1).ToList();
+        path.Last().tag = "Occupied";
         isMoving = true;
         destinationReached = false;
     }

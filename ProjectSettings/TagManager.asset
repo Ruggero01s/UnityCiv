@@ -9,6 +9,7 @@ TagManager:
   - EnemyCity
   - PlayerUnit
   - EnemyUnit
+  - Occupied
   layers:
   - Default
   - TransparentFX
