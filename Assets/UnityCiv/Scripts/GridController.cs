@@ -42,13 +42,8 @@ public class GridController : MonoBehaviour
 	public float hexSizeX = 9.98f;
 	public float hexSizeY = 8.66f;
 
-	public Unit selectedUnit;
-	public HexagonGame selectedTerrain;
-
 	public Pathfinding pathfinder;
 
-	public List<Unit> playerUnits = new List<Unit>();
-	public List<Unit> enemyUnits = new List<Unit>();
 	public Player player;
 
 	public Player enemy;
@@ -58,6 +53,9 @@ public class GridController : MonoBehaviour
 
 	public TurnManager turnManager;
 	public GeneralHUDController HUDctrl;
+
+	public ParticleSystem deathParticle;
+	public ParticleSystem cityAttackParticle;
 
 	private bool firstUpdate = false;
 

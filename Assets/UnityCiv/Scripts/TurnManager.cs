@@ -132,7 +132,7 @@ public class TurnManager : MonoBehaviour
                         HexagonGame startHex = gridController.gameHexagons[selectedUnit.coordinates.x, selectedUnit.coordinates.y];
 
                         // Move the selected unit to the new terrain if it's a valid destination
-                        if (targetHex != null && selectedUnit.movementExpended < selectedUnit.movementUnits)
+                        if (targetHex != null && selectedUnit.movementExpended < selectedUnit.movementUnits && !selectedUnit.isMoving)
                         {
                             selectedUnit.SetDestination(gridController.pathfinder.FindPath(startHex, targetHex));
                         }
@@ -175,6 +175,13 @@ public class TurnManager : MonoBehaviour
         attacker.hasAttacked = true;
         if (tag == "EnemyCity")
         {
+            Vector3 cityPos = gridController.enemyCity.transform.position;
+            cityPos.y = 2.2f;
+            StartCoroutine(RotateTowards(attacker, cityPos));
+            Vector3 direction = (attacker.gameObject.transform.position - gridController.enemyCity.gameObject.transform.position).normalized;
+            Quaternion lookRotation = Quaternion.LookRotation(new Vector3(direction.x, direction.y, direction.z));
+            Instantiate(gridController.cityAttackParticle, gridController.enemyCity.gameObject.transform.position, lookRotation);
+
             // Example logic: reduce city health by the attacking unit's attack value
             gridController.enemyCity.defenseHp -= attacker.atk;
 
@@ -196,6 +203,14 @@ public class TurnManager : MonoBehaviour
         }
         else
         {
+            Vector3 cityPos = gridController.playerCity.transform.position;
+            cityPos.y = 2.2f;
+            StartCoroutine(RotateTowards(attacker, cityPos));
+            Vector3 direction = (attacker.gameObject.transform.position - gridController.playerCity.gameObject.transform.position).normalized;
+            Quaternion lookRotation = Quaternion.LookRotation(new Vector3(direction.x, direction.y, direction.z));
+            Instantiate(gridController.cityAttackParticle, gridController.playerCity.gameObject.transform.position, lookRotation);
+            StartCoroutine(RotateTowards(attacker, gridController.playerCity.transform.position));
+
             // Example logic: reduce city health by the attacking unit's attack value
             gridController.playerCity.defenseHp -= attacker.atk;
 
@@ -287,11 +302,8 @@ public class TurnManager : MonoBehaviour
         {
             StartCoroutine(HUDctrl.Notify(defender.name + " has been defeated!"));
             defenderDead = true;
-            defender.isDying = true;
+            StartCoroutine(KillUnit(defender, dyingTime));
             yield return new WaitForSeconds(dyingTime);
-            defender.owner.units.Remove(defender);
-            if (defender.gameObject != null)
-                Destroy(defender.gameObject);  // Remove enemy unit from the game
         }
 
         if (!defenderDead) // No retaliation if enemy is defeated
@@ -305,11 +317,8 @@ public class TurnManager : MonoBehaviour
             if (attacker.hp <= 0)
             {
                 StartCoroutine(HUDctrl.Notify(attacker.name + " has been defeated!"));
-                attacker.isDying = true;
+                StartCoroutine(KillUnit(attacker, dyingTime));
                 yield return new WaitForSeconds(dyingTime);
-                attacker.owner.units.Remove(attacker);
-                if (attacker.gameObject != null)
-                    Destroy(attacker.gameObject);  // Remove player unit from the game
             }
         }
 
@@ -317,7 +326,16 @@ public class TurnManager : MonoBehaviour
         // Update the End Turn Button state
     }
 
+    public IEnumerator KillUnit(Unit unit, float dieTime)
+    {
+        unit.isDying = true;
+        unit.owner.units.Remove(unit);
+        gridController.gameHexagons[unit.coordinates.x, unit.coordinates.y].tag = "MovableTerrain";
+        yield return new WaitForSeconds(dieTime);
+        Instantiate(gridController.deathParticle, unit.gameObject.transform.position, Quaternion.Euler(-90, 0, 0));
+        Destroy(unit.gameObject); // Remove enemy unit from the game
 
+    }
 
     IEnumerator RotateTowards(Unit unit, Vector3 targetPosition)
     {
@@ -327,7 +345,7 @@ public class TurnManager : MonoBehaviour
         float rotationSpeed = 5f;  // Rotation speed can be adjusted to be faster or slower
         float rotationProgress = 0f;
 
-        while (rotationProgress < 1f)
+        while (rotationProgress < 1f && unit != null)
         {
             // Slerp the rotation over time
             unit.transform.rotation = Quaternion.Slerp(unit.transform.rotation, lookRotation, rotationProgress);
@@ -422,20 +440,48 @@ public class TurnManager : MonoBehaviour
                 }
             }
 
-            // Step 2: Move towards the closest player unit if not adjacent
+            // Step 2: Check for player city if no player units are nearby
             HexagonGame enemyUnitHex = gridController.gameHexagons[enemyUnit.coordinates.x, enemyUnit.coordinates.y];
             HexagonGame closestPlayerHex = gridController.gameHexagons[closestPlayerUnit.coordinates.x, closestPlayerUnit.coordinates.y];
 
-            if (!gridController.GetGameNeighbors(enemyUnitHex).Contains(closestPlayerHex))
+            // If no units are close or the city is closer than any unit, prioritize attacking the city
+            float distanceToPlayerCity = Vector3.Distance(enemyUnit.transform.position, gridController.playerCity.transform.position);
+
+            if (closestPlayerUnit == null || distanceToPlayerCity < shortestDistance)
             {
-                // Move towards the closest player unit if not in range to attack
-                if (enemyUnit.movementExpended < enemyUnit.movementUnits)
+                // Check if city is close and move toward it
+                HexagonGame playerCityHex = gridController.gameHexagons[gridController.playerCity.gameHex.coordinates.x, gridController.playerCity.gameHex.coordinates.y];
+
+                if (!gridController.GetGameNeighbors(enemyUnitHex).Contains(playerCityHex))
                 {
-                    // Find path and move closer to the player unit
-                    List<HexagonGame> pathToPlayer = gridController.pathfinder.FindPath(enemyUnitHex, closestPlayerHex);
-                    if (pathToPlayer != null && pathToPlayer.Count > 0)
+                    // Move toward the player's city if not adjacent
+                    if (enemyUnit.movementExpended < enemyUnit.movementUnits)
                     {
-                        enemyUnit.SetDestination(pathToPlayer);
+                        List<HexagonGame> pathToCity = gridController.pathfinder.FindPath(enemyUnitHex, playerCityHex);
+                        if (pathToCity != null && pathToCity.Count > 0)
+                        {
+                            enemyUnit.SetDestination(pathToCity);
+                        }
+                    }
+                }
+                else
+                {
+                    // If adjacent to the player's city, attack it
+                    AttackCity(enemyUnit, playerCityHex.tag);
+                }
+            }
+            else
+            {
+                // Step 3: Move towards the closest player unit if not adjacent
+                if (!gridController.GetGameNeighbors(enemyUnitHex).Contains(closestPlayerHex))
+                {
+                    if (enemyUnit.movementExpended < enemyUnit.movementUnits)
+                    {
+                        List<HexagonGame> pathToPlayer = gridController.pathfinder.FindPath(enemyUnitHex, closestPlayerHex);
+                        if (pathToPlayer != null && pathToPlayer.Count > 0)
+                        {
+                            enemyUnit.SetDestination(pathToPlayer);
+                        }
                     }
                 }
             }
@@ -443,14 +489,37 @@ public class TurnManager : MonoBehaviour
             yield return new WaitForSeconds(0.5f);
         }
 
-        // Step 3: After moving, check for nearby player units and attack if possible
+        // Wait until all units finish moving/attacking
+        bool somethingStillMoving;
+        do
+        {
+            somethingStillMoving = false;
+            foreach (Unit enemyUnit in enemy.units)
+            {
+                if (enemyUnit.isMoving || enemyUnit.isFighting || enemyUnit.isDying)
+                {
+                    somethingStillMoving = true;
+                    break;
+                }
+            }
+
+            foreach (Unit unit in player.units)
+            {
+                if (unit.isMoving || unit.isFighting || unit.isDying)
+                {
+                    somethingStillMoving = true;
+                    break;
+                }
+            }
+            yield return new WaitForSeconds(1f);
+        } while (somethingStillMoving);
+
+        // Step 4: After moving, check for nearby player units and attack if possible
         foreach (Unit enemyUnit in enemy.units)
         {
-            // Skip units that have already attacked
             if (enemyUnit.hasAttacked)
                 continue;
 
-            // Find the nearest player unit again
             Unit closestPlayerUnit = null;
             float shortestDistance = float.MaxValue;
 
@@ -464,34 +533,43 @@ public class TurnManager : MonoBehaviour
                 }
             }
 
-            // Check if the enemy unit is adjacent to the player unit for an attack
             HexagonGame enemyUnitHex = gridController.gameHexagons[enemyUnit.coordinates.x, enemyUnit.coordinates.y];
             HexagonGame closestPlayerHex = gridController.gameHexagons[closestPlayerUnit.coordinates.x, closestPlayerUnit.coordinates.y];
 
             if (gridController.GetGameNeighbors(enemyUnitHex).Contains(closestPlayerHex))
             {
-                // If adjacent, initiate combat with the closest player unit
                 InitiateCombat(enemyUnit, closestPlayerUnit, closestPlayerHex);
             }
         }
 
-        bool somethingStillMoving = false;  //TODO test this more
-        do 
+        // Wait until all units finish moving/attacking
+        do
         {
             somethingStillMoving = false;
             foreach (Unit enemyUnit in enemy.units)
             {
-                if (enemyUnit.isMoving || enemyUnit.isFighting || enemyUnit.isDying){
+                if (enemyUnit.isMoving || enemyUnit.isFighting || enemyUnit.isDying)
+                {
+                    somethingStillMoving = true;
+                    break;
+                }
+            }
+
+            foreach (Unit unit in player.units)
+            {
+                if (unit.isMoving || unit.isFighting || unit.isDying)
+                {
                     somethingStillMoving = true;
                     break;
                 }
             }
             yield return new WaitForSeconds(1f);
-        }while(somethingStillMoving);
+        } while (somethingStillMoving);
 
-        // Step 4: End the enemy turn after processing all units
+        // Step 5: End the enemy turn after processing all units
         EndEnemyTurn();
     }
+
 
 
 

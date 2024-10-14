@@ -17,13 +17,13 @@ public class Unit : MonoBehaviour
     public int movementExpended = 0;// Movement points used in the current turn
 
     private Animator animator;
-    
+
     // The path the unit will follow (set externally when a destination is selected)
     public List<HexagonGame> path;
 
     public Vector2Int coordinates;  // Current hex grid coordinates
     public Vector3 rawPosition;     // Actual position on the map
-    
+
     public float speed = 20f;        // Movement speed
     public float rotationSpeed = 700f; // Rotation speed for smooth turning
 
@@ -82,10 +82,10 @@ public class Unit : MonoBehaviour
             coordinates = path[pathCounter].coordinates;
             path[pathCounter].ClaimHex(owner);
             movementExpended++;    // Reduce movement units as you move
-            
+
             path[pathCounter].tag = "Occupied";
-            path[pathCounter-1].tag = "MovableTerrain"; 
-            
+            path[pathCounter - 1].tag = "MovableTerrain";
+
             pathCounter++;
             // If the path is empty after removal, the destination is reached
             if (pathCounter >= path.Count)
@@ -121,7 +121,7 @@ public class Unit : MonoBehaviour
     public void SetDestination(List<HexagonGame> newPath)
     {
         // Reset movement expended for the turn and set new path
-        path = newPath.Take(movementUnits - movementExpended+1).ToList();
+        path = newPath.Take(movementUnits - movementExpended + 1).ToList();
         path.Last().tag = "Occupied";
         isMoving = true;
         destinationReached = false;
