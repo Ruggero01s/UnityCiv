@@ -2715,7 +2715,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f935ca47a5a41a444b4dda7a6a9ab06c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gridSize: {x: 20, y: 20}
+  gridSize: {x: 10, y: 10}
   plainHex: {fileID: 1901911034279994, guid: 61a4f649633a1f94abeb21559df74bd4, type: 3}
   fertilePlainHex: {fileID: 1027144338041134, guid: 8d65fe10dbb32e34aa703943ab85d9c0, type: 3}
   waterHex: {fileID: 1829116461306768, guid: cd4f2cbde7d033f45a5d96afb77a69e1, type: 3}
@@ -2737,14 +2737,12 @@ MonoBehaviour:
   scale: {x: 9.98, y: 10, z: 8.66}
   hexSizeX: 9.98
   hexSizeY: 8.66
-  selectedUnit: {fileID: 0}
-  selectedTerrain: {fileID: 0}
-  playerUnits: []
-  enemyUnits: []
   playerCity: {fileID: 0}
   enemyCity: {fileID: 0}
   turnManager: {fileID: 0}
   HUDctrl: {fileID: 0}
+  deathParticle: {fileID: 4596704776685712152, guid: fd3806add03584844ab0f845c4183ae7, type: 3}
+  cityAttackParticle: {fileID: 6002205505513432017, guid: 3f242797a19d7c645898a696aebfc773, type: 3}
 --- !u!114 &1333265486
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2759,7 +2757,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   currentTurn: 0
   disablePlayerInput: 0
-  toRestore: []
 --- !u!1 &1355015287
 GameObject:
   m_ObjectHideFlags: 0

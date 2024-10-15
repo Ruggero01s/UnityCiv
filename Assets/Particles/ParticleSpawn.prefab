@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 4596704776685712152}
   - component: {fileID: 9211497808870529844}
   m_Layer: 0
-  m_Name: ParticleDeath
+  m_Name: ParticleSpawn
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4835,7 +4835,7 @@ ParticleSystemRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 891fcdc1356d79143b4265578fb587b5, type: 2}
+  - {fileID: 2100000, guid: e6bca34f11b56c44ab4a95efac32b2e8, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

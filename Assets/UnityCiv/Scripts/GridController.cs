@@ -55,6 +55,7 @@ public class GridController : MonoBehaviour
 	public GeneralHUDController HUDctrl;
 
 	public ParticleSystem deathParticle;
+	public ParticleSystem spawnParticle;
 	public ParticleSystem cityAttackParticle;
 
 	private bool firstUpdate = false;
@@ -384,7 +385,7 @@ public class GridController : MonoBehaviour
 		enemyCityHex.gameObject.AddComponent<City>();
 		enemyCity = enemyCityHex.gameObject.GetComponent<City>();
 		enemyCity.gameHex = enemyCityHex;
-		enemyCity.owner = enemy;
+		enemyCity.owner = enemy;		
 		enemyCity.ctrl = this;
 
 
@@ -456,6 +457,10 @@ public class GridController : MonoBehaviour
 			enemy.units.Add(unitComp);
 			neighbors.Remove(chosenHex);
 		}
+
+		player.city = playerCity;
+		enemy.city = enemyCity;
+
 	}
 
 	int HexDistance(Vector2Int a, Vector2Int b)
@@ -486,14 +491,9 @@ public class GridController : MonoBehaviour
 
 	public bool SpawnUnit(Player owner)
 	{
-		City city;
-		if (owner == player)
-			city = playerCity;
-		else
-			city = enemyCity;
 
 
-		List<HexagonGame> neighbors = GetGameNeighbors(city.gameHex);
+		List<HexagonGame> neighbors = GetGameNeighbors(owner.city.gameHex);
 		for (int i = 0; i < neighbors.Count; i++)
 		{
 			if (neighbors[i].hexType.Equals(waterHex))
@@ -523,19 +523,26 @@ public class GridController : MonoBehaviour
 			int mov = 3 + owner.unitUpgradeLevel;
 
 			HexagonGame chosenHex = neighbors[Random.Range(0, neighbors.Count)];
+			chosenHex.tag = "Occupied";
 			Vector3 pos = chosenHex.rawPosition;
 			pos.y = 2.36f;
-			GameObject playerUnit = Instantiate(playerUnitModel, pos, Quaternion.identity);
+			GameObject unit;
+			if(owner==enemy) {
+				unit = Instantiate(enemyUnitModel, pos, Quaternion.identity);
+			}else{
+				unit = Instantiate(playerUnitModel, pos, Quaternion.identity);
+			}
+			Instantiate(spawnParticle, chosenHex.transform.position, Quaternion.Euler(-90,0,0));
 
-			Unit unitComp = playerUnit.GetComponent<Unit>();
+			Unit unitComp = unit.GetComponent<Unit>();
 			unitComp.coordinates = chosenHex.coordinates;
-			unitComp.owner = player;
+			unitComp.owner = owner;
 			unitComp.atk = atk;
 			unitComp.def = def;
 			unitComp.maxHp = hp;
 			unitComp.hp = hp;
 			unitComp.movementUnits = mov;
-			player.units.Add(playerUnit.GetComponent<Unit>());
+			owner.units.Add(unit.GetComponent<Unit>());
 
 			return true;
 		}

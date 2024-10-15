@@ -7,6 +7,8 @@ public class Player
     public Color ownedColor; // Color assigned to the player's controlled hexes
 	public List<Unit> units = new List<Unit>();
 
+    public City city;
+
     private List<HexagonGame> controlledHexes;
     private int funds = 0;
 

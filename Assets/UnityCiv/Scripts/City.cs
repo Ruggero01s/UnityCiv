@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using TMPro;
+using UnityEditor.PackageManager;
 using UnityEngine;
 
 public class City : MonoBehaviour
@@ -13,19 +14,22 @@ public class City : MonoBehaviour
 
     public int defenseHp = 50;
 
+    public int level = 1;
+
 
     public void UpgradeCity()
     {
         // Logic for building a structure (e.g., adding defense or resource production)
-        StartCoroutine(ctrl.HUDctrl.Notify("Upgraded city!"));
+        ctrl.HUDctrl.Notify("Upgraded city!");
         defenseAtk += 5;
         defenseHp += 10;
+        level++;
     }
 
     public void UpgradeUnits()
     {
         // Logic for upgrading units (e.g., increasing their power or range)
-        StartCoroutine(ctrl.HUDctrl.Notify("Upgraded units!"));
+        ctrl.HUDctrl.Notify("Upgraded units!");
 
         foreach (Unit unit in owner.units)
         {

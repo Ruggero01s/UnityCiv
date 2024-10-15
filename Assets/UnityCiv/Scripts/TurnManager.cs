@@ -175,58 +175,58 @@ public class TurnManager : MonoBehaviour
         attacker.hasAttacked = true;
         if (tag == "EnemyCity")
         {
-            Vector3 cityPos = gridController.enemyCity.transform.position;
+            Vector3 cityPos = player.city.transform.position;
             cityPos.y = 2.2f;
             StartCoroutine(RotateTowards(attacker, cityPos));
-            Vector3 direction = (attacker.gameObject.transform.position - gridController.enemyCity.gameObject.transform.position).normalized;
+            Vector3 direction = (attacker.gameObject.transform.position - enemy.city.gameObject.transform.position).normalized;
             Quaternion lookRotation = Quaternion.LookRotation(new Vector3(direction.x, direction.y, direction.z));
-            Instantiate(gridController.cityAttackParticle, gridController.enemyCity.gameObject.transform.position, lookRotation);
+            Instantiate(gridController.cityAttackParticle, enemy.city.gameObject.transform.position, lookRotation);
 
             // Example logic: reduce city health by the attacking unit's attack value
-            gridController.enemyCity.defenseHp -= attacker.atk;
+            enemy.city.defenseHp -= attacker.atk;
 
             // Check if the city has been destroyed
-            if (gridController.enemyCity.defenseHp <= 0)
+            if (enemy.city.defenseHp <= 0)
             {
                 //TODO implement win 
             }
             else
             {
-                attacker.hp -= gridController.enemyCity.defenseAtk;
+                attacker.hp -= enemy.city.defenseAtk;
 
                 if (attacker.hp <= 0)
                 {
                     Destroy(attacker.gameObject);  // Remove player unit from the game
-                    StartCoroutine(HUDctrl.Notify(attacker.name + " has been defeated!"));
+                    HUDctrl.Notify(attacker.name + " has been defeated!");
                 }
             }
         }
         else
         {
-            Vector3 cityPos = gridController.playerCity.transform.position;
+            Vector3 cityPos = player.city.transform.position;
             cityPos.y = 2.2f;
             StartCoroutine(RotateTowards(attacker, cityPos));
-            Vector3 direction = (attacker.gameObject.transform.position - gridController.playerCity.gameObject.transform.position).normalized;
+            Vector3 direction = (attacker.gameObject.transform.position - player.city.gameObject.transform.position).normalized;
             Quaternion lookRotation = Quaternion.LookRotation(new Vector3(direction.x, direction.y, direction.z));
-            Instantiate(gridController.cityAttackParticle, gridController.playerCity.gameObject.transform.position, lookRotation);
-            StartCoroutine(RotateTowards(attacker, gridController.playerCity.transform.position));
+            Instantiate(gridController.cityAttackParticle, player.city.gameObject.transform.position, lookRotation);
+            StartCoroutine(RotateTowards(attacker, player.city.transform.position));
 
             // Example logic: reduce city health by the attacking unit's attack value
-            gridController.playerCity.defenseHp -= attacker.atk;
+            player.city.defenseHp -= attacker.atk;
 
             // Check if the city has been destroyed
-            if (gridController.playerCity.defenseHp <= 0)
+            if (player.city.defenseHp <= 0)
             {
                 //TODO implement lose 
             }
             else
             {
-                attacker.hp -= gridController.playerCity.defenseAtk;
+                attacker.hp -= player.city.defenseAtk;
 
                 if (attacker.hp <= 0)
                 {
                     Destroy(attacker.gameObject);  // Remove player unit from the game
-                    StartCoroutine(HUDctrl.Notify(attacker.name + " has been defeated!"));
+                   HUDctrl.Notify(attacker.name + " has been defeated!");
                 }
             }
         }
@@ -244,7 +244,7 @@ public class TurnManager : MonoBehaviour
         // Delay combat slightly to allow the units to rotate before attacking
         StartCoroutine(DelayedCombat(attacker, defender, 0.5f, defenderHex));
 
-        StartCoroutine(HUDctrl.Notify("Combat initiated between " + attacker.owner.playerName + " soldier and " + defender.owner.playerName + " unit"));
+        HUDctrl.Notify("Combat initiated between " + attacker.owner.playerName + " soldier and " + defender.owner.playerName + " unit");
     }
 
     IEnumerator DelayedCombat(Unit attacker, Unit defender, float delay, HexagonGame defenderHex)
@@ -290,7 +290,7 @@ public class TurnManager : MonoBehaviour
         int finalDefenseValue = Mathf.RoundToInt(defender.def * defenseModifier);
 
         defender.hp -= finalAttackDamage;
-        StartCoroutine(HUDctrl.Notify(attacker.owner.playerName + " soldier deals " + finalAttackDamage + " damage to defender"));
+        HUDctrl.Notify(attacker.owner.playerName + " soldier deals " + finalAttackDamage + " damage to defender");
 
         yield return new WaitForSeconds(combatTime);
 
@@ -300,7 +300,7 @@ public class TurnManager : MonoBehaviour
         // Check if enemy unit is still alive
         if (defender.hp <= 0)
         {
-            StartCoroutine(HUDctrl.Notify(defender.name + " has been defeated!"));
+            HUDctrl.Notify(defender.name + " has been defeated!");
             defenderDead = true;
             StartCoroutine(KillUnit(defender, dyingTime));
             yield return new WaitForSeconds(dyingTime);
@@ -311,12 +311,12 @@ public class TurnManager : MonoBehaviour
             // Enemy unit retaliates
             attacker.hp -= finalDefenseValue;  // Apply defender's attack modified by the terrain/weather
 
-            StartCoroutine(HUDctrl.Notify(defender.owner.playerName + " unit retaliates with " + finalDefenseValue + " damage to attacker"));
+            HUDctrl.Notify(defender.owner.playerName + " unit retaliates with " + finalDefenseValue + " damage to attacker");
 
             // Check if player unit is still alive
             if (attacker.hp <= 0)
             {
-                StartCoroutine(HUDctrl.Notify(attacker.name + " has been defeated!"));
+                HUDctrl.Notify(attacker.name + " has been defeated!");
                 StartCoroutine(KillUnit(attacker, dyingTime));
                 yield return new WaitForSeconds(dyingTime);
             }
@@ -410,14 +410,56 @@ public class TurnManager : MonoBehaviour
         player.GenerateFundsPerTurn();
         ProgressWeather();
         // Any logic to prepare the player’s turn, like refreshing UI
-        StartCoroutine(HUDctrl.Notify(player.playerName + " turn starts"));
+        HUDctrl.Notify(player.playerName + " turn starts");
     }
 
     IEnumerator StartEnemyTurn()
     {
-        StartCoroutine(HUDctrl.Notify(enemy.playerName + " turn starts"));
+        HUDctrl.Notify(enemy.playerName + " turn starts");
 
         enemy.GenerateFundsPerTurn();
+
+        // Step 1: AI Economic Decisions (Smart Priority)
+
+        int unitCount = enemy.units.Count;
+        int cityLevel = enemy.city.level;  // Assuming city defense HP can represent its level (change if needed)
+        int unitLevel = enemy.unitUpgradeLevel;
+
+        int trainUnitCost = 200;  // Example cost for training units
+        int upgradeUnitCost = 150;  // Example cost for upgrading units
+        int upgradeCityCost = 100;  // Example cost for upgrading city
+
+        // Priority 1: If AI has few units, prioritize training new units
+        if (unitCount < 5) // Example threshold for "few units"
+        {
+            if (enemy.GetFunds() >= trainUnitCost && enemy.SpendFunds(trainUnitCost))
+            {
+                if (enemy.city.TrainUnit())
+                {
+                    yield return new WaitForSeconds(0.5f);  // Small delay after unit training
+                }
+            }
+        }
+
+        // Priority 2: If AI has many units, prioritize upgrading them
+        if (unitCount >= 5)
+        {
+            if (enemy.GetFunds() >= upgradeUnitCost && enemy.SpendFunds(upgradeUnitCost))
+            {
+                enemy.city.UpgradeUnits();
+                yield return new WaitForSeconds(0.5f);  // Small delay after upgrading units
+            }
+        }
+
+        // Priority 3: If unit level is higher than the city level, upgrade the city
+        if (unitLevel > cityLevel)
+        {
+            if (enemy.GetFunds() >= upgradeCityCost && enemy.SpendFunds(upgradeCityCost))
+            {
+                enemy.city.UpgradeCity();
+                yield return new WaitForSeconds(0.5f);  // Small delay after upgrading city
+            }
+        }
 
         // Step 1: Loop through each enemy unit to move them
         foreach (Unit enemyUnit in enemy.units)
@@ -445,12 +487,12 @@ public class TurnManager : MonoBehaviour
             HexagonGame closestPlayerHex = gridController.gameHexagons[closestPlayerUnit.coordinates.x, closestPlayerUnit.coordinates.y];
 
             // If no units are close or the city is closer than any unit, prioritize attacking the city
-            float distanceToPlayerCity = Vector3.Distance(enemyUnit.transform.position, gridController.playerCity.transform.position);
+            float distanceToPlayerCity = Vector3.Distance(enemyUnit.transform.position, player.city.transform.position);
 
             if (closestPlayerUnit == null || distanceToPlayerCity < shortestDistance)
             {
                 // Check if city is close and move toward it
-                HexagonGame playerCityHex = gridController.gameHexagons[gridController.playerCity.gameHex.coordinates.x, gridController.playerCity.gameHex.coordinates.y];
+                HexagonGame playerCityHex = gridController.gameHexagons[player.city.gameHex.coordinates.x, player.city.gameHex.coordinates.y];
 
                 if (!gridController.GetGameNeighbors(enemyUnitHex).Contains(playerCityHex))
                 {
