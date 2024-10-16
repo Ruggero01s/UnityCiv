@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class UnitHUDManager : MonoBehaviour
@@ -28,6 +29,8 @@ public class UnitHUDManager : MonoBehaviour
             atkText.text = "ATK: " +currentUnit.atk.ToString(); 
             defText.text = "DEF: " +currentUnit.def.ToString(); 
         }
+        if(currentUnit == null || currentUnit.IsDestroyed())
+            unitHUDPanel.SetActive(false);
     }
 
     public void OpenUnitHUD(Unit unit)

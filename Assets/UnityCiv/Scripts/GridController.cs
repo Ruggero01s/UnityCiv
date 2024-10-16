@@ -496,22 +496,10 @@ public class GridController : MonoBehaviour
 		List<HexagonGame> neighbors = GetGameNeighbors(owner.city.gameHex);
 		for (int i = 0; i < neighbors.Count; i++)
 		{
-			if (neighbors[i].hexType.Equals(waterHex))
+			if (neighbors[i].hexType.Equals(waterHex) || neighbors[i].CompareTag("Occupied"))
 			{
 				neighbors.RemoveAt(i);
 				i--;
-			}
-			else
-			{
-				foreach (Unit unit in owner.units)
-				{
-					if (unit.coordinates == neighbors[i].coordinates)
-					{
-						neighbors.RemoveAt(i);
-						i--;
-						break;
-					}
-				}
 			}
 		}
 		if (neighbors.Count > 0)
