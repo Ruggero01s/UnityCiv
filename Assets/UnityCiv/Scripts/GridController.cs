@@ -6,9 +6,9 @@ using UnityEngine;
 
 public class GridController : MonoBehaviour
 {
-	public List<Hexagon> waterHexagons = new List<Hexagon>();
-	public List<Hexagon> mountainHexagons = new List<Hexagon>();
-	public List<Hexagon> plainHexagons = new List<Hexagon>();
+	public List<Hexagon> waterHexagons = new();
+	public List<Hexagon> mountainHexagons = new();
+	public List<Hexagon> plainHexagons = new();
 	public Vector2Int gridSize;
 	public GameObject plainHex;
 	public GameObject fertilePlainHex;
@@ -24,11 +24,22 @@ public class GridController : MonoBehaviour
 	public GameObject enemyCityModel;
 	public GameObject playerUnitModel;
 	public GameObject enemyUnitModel;
-	public List<HexagonGame> possibleSpawnHexes = new List<HexagonGame>();
+	public List<HexagonGame> possibleSpawnHexes = new();
+
+	// Constants
 	public int STARTING_UNITS = 2;
 	public int STARTING_UNIT_ATK = 6;
 	public int STARTING_UNIT_DEF = 4;
 	public int STARTING_UNIT_MAXHP = 10;
+
+	public int TRAIN_UNIT_COST = 250;
+	public int CITY_UPGRADE_COST = 150;
+	public int UNIT_UPGRADE_COST = 400;
+	public int UNIT_ATK_UPGRADE = 4;
+	public int UNIT_DEF_UPGRADE = 2;
+	public int UNIT_HP_UPGRADE = 5;
+	public int FUNDS_PER_HEX = 10;
+	public int DEFAULT_FUNDS_PER_TURN = 50;
 
 	public Hexagon[,] hexagons;
 	public HexagonGame[,] gameHexagons;
@@ -38,7 +49,7 @@ public class GridController : MonoBehaviour
 	public float noiseSeedForest;
 
 
-	public Vector3 scale = new Vector3(9.98f, 10, 8.66f);
+	public Vector3 scale = new(9.98f, 10, 8.66f);
 	public float hexSizeX = 9.98f;
 	public float hexSizeY = 8.66f;
 
@@ -57,11 +68,12 @@ public class GridController : MonoBehaviour
 	public ParticleSystem deathParticle;
 	public ParticleSystem spawnParticle;
 	public ParticleSystem cityAttackParticle;
+	public ParticleSystem cityDestroyedParticle;
 
 	private bool firstUpdate = false;
 
-	// Start is called before the first frame update
-	void Start()
+    // Start is called before the first frame update
+    void Start()
 	{
 		ownerOverlay = ownerOverlayLoad;
 		hexagons = new Hexagon[gridSize.x, gridSize.y];
@@ -132,7 +144,7 @@ public class GridController : MonoBehaviour
 		{
 			for (int y = 0; y < gridSize.y; y++)
 			{
-				Hexagon hex = new Hexagon(new Vector2Int(x, y));
+				Hexagon hex = new(new Vector2Int(x, y));
 				hex.rawPosition = GetPosForHexFromCoord(hex.coordinates);
 				hex.hexType = DetermineTileMainType(hex.coordinates);
 				if (hex.hexType.Equals(waterHex))
@@ -350,16 +362,19 @@ public class GridController : MonoBehaviour
 
 	private void InitializePlayers()
 	{
-		player = new Player("Tyurn", Color.red);
+		player = new Player("Tyurn", Color.blue);
 		enemy = new Player("Undeads", Color.black);
+
+		player.ctrl = this;
+		enemy.ctrl = this;
 	}
 
 	private void SpawnCitiesAndUnits()
 	{
 		HexagonGame playerCityHex = possibleSpawnHexes[Random.Range(0, possibleSpawnHexes.Count)];
-		List<HexagonGame> enemySpawnHexes = new List<HexagonGame>();
-		List<HexagonGame> playerUnitSpawn = new List<HexagonGame>();
-		List<HexagonGame> enemyUnitSpawn = new List<HexagonGame>();
+		List<HexagonGame> enemySpawnHexes = new();
+		List<HexagonGame> playerUnitSpawn = new();
+		List<HexagonGame> enemyUnitSpawn = new();
 
 		foreach (HexagonGame hex in possibleSpawnHexes)
 		{
@@ -371,7 +386,7 @@ public class GridController : MonoBehaviour
 		HexagonGame enemyCityHex = enemySpawnHexes[Random.Range(0, enemySpawnHexes.Count)];
 
 		GameObject playerCityLocal = Instantiate(playerCityModel, playerCityHex.transform.position, Quaternion.identity);
-		playerCityHex.tag = "City";
+		playerCityHex.tag = "PlayerCity";
 		playerCityHex.gameObject.AddComponent<City>();
 		playerCity = playerCityHex.gameObject.GetComponent<City>();
 		playerCity.gameHex = playerCityHex;
@@ -417,7 +432,6 @@ public class GridController : MonoBehaviour
 			pos = chosenHex.rawPosition;
 			pos.y = 2.36f;
 			GameObject playerUnit = Instantiate(playerUnitModel, pos, Quaternion.identity);
-
 			Unit unitComp = playerUnit.GetComponent<Unit>();
 			chosenHex.tag="Occupied";
 			unitComp.coordinates = chosenHex.coordinates;
@@ -445,7 +459,6 @@ public class GridController : MonoBehaviour
 			pos = chosenHex.rawPosition;
 			pos.y = 2f;
 			GameObject enemyUnit = Instantiate(enemyUnitModel, pos, Quaternion.identity);
-
 			Unit unitComp = enemyUnit.GetComponent<Unit>();
 			chosenHex.tag="Occupied";
 			unitComp.coordinates = chosenHex.coordinates;
@@ -491,8 +504,6 @@ public class GridController : MonoBehaviour
 
 	public bool SpawnUnit(Player owner)
 	{
-
-
 		List<HexagonGame> neighbors = GetGameNeighbors(owner.city.gameHex);
 		for (int i = 0; i < neighbors.Count; i++)
 		{
@@ -504,10 +515,9 @@ public class GridController : MonoBehaviour
 		}
 		if (neighbors.Count > 0)
 		{
-			//TODO rendere queste delle variabili (3 , 2 , 5)
-			int atk = STARTING_UNIT_ATK + owner.unitUpgradeLevel * 3;
-			int def = STARTING_UNIT_DEF + owner.unitUpgradeLevel * 2;
-			int hp = STARTING_UNIT_MAXHP + owner.unitUpgradeLevel * 5;
+			int atk = STARTING_UNIT_ATK + owner.unitUpgradeLevel * UNIT_ATK_UPGRADE;
+			int def = STARTING_UNIT_DEF + owner.unitUpgradeLevel * UNIT_DEF_UPGRADE;
+			int hp = STARTING_UNIT_MAXHP + owner.unitUpgradeLevel * UNIT_HP_UPGRADE;
 			int mov = 3 + owner.unitUpgradeLevel;
 
 			HexagonGame chosenHex = neighbors[Random.Range(0, neighbors.Count)];

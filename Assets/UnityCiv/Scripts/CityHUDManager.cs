@@ -9,9 +9,7 @@ public class CityHUDManager : MonoBehaviour
     public GeneralHUDController hudController;
     public GameObject cityHUDPanel;  // Reference to the City HUD panel
     private City currentCity;        // The city currently selected
-    private int costToUpgradeCity = 100;
-    private int costToUpgradeUnits = 100;
-    private int costToTrainUnit = 100;
+    public GridController ctrl;
     public Button upgradeCityButton;
     public Button upgradeUnitsButton;
     public Button trainUnitButton;
@@ -54,7 +52,7 @@ public class CityHUDManager : MonoBehaviour
 
     public void SpendFundsOnUpgradeCity()
     {
-        if (currentCity != null && currentCity.owner.SpendFunds(costToUpgradeCity))
+        if (currentCity != null && currentCity.owner.SpendFunds(ctrl.CITY_UPGRADE_COST))
         {
             currentCity.UpgradeCity();
             hudController.Notify("Defense increased!");
@@ -62,13 +60,13 @@ public class CityHUDManager : MonoBehaviour
         }
         else
         {
-            hudController.Notify("Not enough Funds! Need " + costToUpgradeCity);
+            hudController.Notify("Not enough Funds! Need " + ctrl.CITY_UPGRADE_COST);
         }
     }
 
     public void SpendFundsOnUpgradeUnits()
     {
-        if (currentCity != null && currentCity.owner.SpendFunds(costToUpgradeUnits))
+        if (currentCity != null && currentCity.owner.SpendFunds(ctrl.UNIT_UPGRADE_COST))
         {
             currentCity.UpgradeUnits();
             hudController.Notify("Units upgraded!");
@@ -76,13 +74,13 @@ public class CityHUDManager : MonoBehaviour
         }
         else
         {
-           hudController.Notify("Not enough Funds! Need " + costToUpgradeUnits);
+           hudController.Notify("Not enough Funds! Need " + ctrl.UNIT_UPGRADE_COST);
         }
     }
 
     public void SpendFundsOnTrainUnit()
     {
-        if (currentCity != null && currentCity.owner.SpendFunds(costToTrainUnit))
+        if (currentCity != null && currentCity.owner.SpendFunds(ctrl.TRAIN_UNIT_COST))
         {
             if (currentCity.TrainUnit())
             {
@@ -95,7 +93,7 @@ public class CityHUDManager : MonoBehaviour
         }
         else
         {
-            hudController.Notify("Not enough Funds! Need " + costToTrainUnit);
+            hudController.Notify("Not enough Funds! Need " + ctrl.TRAIN_UNIT_COST);
         }
     }
 }

@@ -33,10 +33,10 @@ public class City : MonoBehaviour
 
         foreach (Unit unit in owner.units)
         {
-            unit.maxHp += 5;
-            unit.hp += 5;
-            unit.atk += 3;
-            unit.def += 2;
+            unit.maxHp += ctrl.UNIT_HP_UPGRADE;
+            unit.hp += ctrl.UNIT_HP_UPGRADE;
+            unit.atk += ctrl.UNIT_ATK_UPGRADE;
+            unit.def += ctrl.UNIT_DEF_UPGRADE;
             unit.movementUnits += 1;
         }
 

@@ -58,7 +58,7 @@ public class Pathfinding
             {
                 if (neighbour != null)
                 {
-                    if (neighbour.CompareTag("Occupied") && neighbour == endNode)
+                    if ((neighbour.CompareTag("Occupied") || neighbour.CompareTag("PlayerCity")) && neighbour == endNode)
                         return CalculatePath(currentNode);
                     else
                     {
@@ -90,7 +90,7 @@ public class Pathfinding
 
     private List<HexagonGame> CalculatePath(HexagonGame endNode)
     {
-        List<HexagonGame> path = new List<HexagonGame>();
+        List<HexagonGame> path = new();
         path.Add(endNode);
         HexagonGame currentNode = endNode;
         while (currentNode.cameFromHex != null)

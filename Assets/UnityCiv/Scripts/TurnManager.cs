@@ -4,12 +4,12 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using Random = System.Random;
-
-//TODO change all debug.log with notifications
-//TODO disable end turn when combat is happening
+//todo city killing an enemy unit breaks ai
+//todo finish end game
 public class TurnManager : MonoBehaviour
 {
     public enum TurnState { PlayerTurn, EnemyTurn }
+    public int turnCount = 0;
     public TurnState currentTurn;
     public Player enemy;
     public Player player;
@@ -17,12 +17,14 @@ public class TurnManager : MonoBehaviour
     private Unit selectedUnit;
     private City selectedCity;
 
-    private CityHUDManager cityHUDManager;
-    private UnitHUDManager unitHUDManager;
-    private WeatherHUDManager weatherHUDManager;
+    public CityHUDManager cityHUDManager;
+    public UnitHUDManager unitHUDManager;
+    public WeatherHUDManager weatherHUDManager;
 
-    private GeneralHUDController HUDctrl;
-    private GridController gridController;
+    public GeneralHUDController HUDctrl;
+    public EndScreenController endScreenCtrl;  // Reference to the EndScreenController
+
+    public GridController ctrl;
 
     private int combatTime = 3;
     private int dyingTime = 3;
@@ -36,7 +38,7 @@ public class TurnManager : MonoBehaviour
     void Start()
     {
         currentTurn = TurnState.PlayerTurn;  // Player starts first
-        gridController = FindObjectOfType<GridController>();
+        ctrl = FindObjectOfType<GridController>();
         cityHUDManager = FindObjectOfType<CityHUDManager>();
         unitHUDManager = FindObjectOfType<UnitHUDManager>();
         weatherHUDManager = FindObjectOfType<WeatherHUDManager>();
@@ -45,8 +47,8 @@ public class TurnManager : MonoBehaviour
 
 
         // Load the unit lists from the GridController
-        player = gridController.player;
-        enemy = gridController.enemy;
+        player = ctrl.player;
+        enemy = ctrl.enemy;
 
         Array values = Enum.GetValues(typeof(WeatherState));
         Random random = new();
@@ -110,11 +112,11 @@ public class TurnManager : MonoBehaviour
 
                         if (clickedEnemyUnit != null)
                         {
-                            HexagonGame selectedUnitHex = gridController.gameHexagons[selectedUnit.coordinates.x, selectedUnit.coordinates.y];
-                            HexagonGame enemyUnitHex = gridController.gameHexagons[clickedEnemyUnit.coordinates.x, clickedEnemyUnit.coordinates.y];
+                            HexagonGame selectedUnitHex = ctrl.gameHexagons[selectedUnit.coordinates.x, selectedUnit.coordinates.y];
+                            HexagonGame enemyUnitHex = ctrl.gameHexagons[clickedEnemyUnit.coordinates.x, clickedEnemyUnit.coordinates.y];
 
                             // Check if enemy is on a neighboring hex
-                            if (gridController.GetGameNeighbors(selectedUnitHex).Contains(enemyUnitHex) && !selectedUnit.hasAttacked)
+                            if (ctrl.GetGameNeighbors(selectedUnitHex).Contains(enemyUnitHex) && !selectedUnit.hasAttacked)
                             {
                                 // Initiate combat between selected unit and enemy unit
                                 disablePlayerInput = true;
@@ -128,18 +130,18 @@ public class TurnManager : MonoBehaviour
                     if (hit.collider.CompareTag("MovableTerrain") && selectedUnit != null)
                     {
                         HexagonGame targetHex = hit.transform.GetComponent<HexagonGame>();
-                        GridController gridController = FindObjectOfType<GridController>();
-                        HexagonGame startHex = gridController.gameHexagons[selectedUnit.coordinates.x, selectedUnit.coordinates.y];
+                        GridController ctrl = FindObjectOfType<GridController>();
+                        HexagonGame startHex = ctrl.gameHexagons[selectedUnit.coordinates.x, selectedUnit.coordinates.y];
 
                         // Move the selected unit to the new terrain if it's a valid destination
                         if (targetHex != null && selectedUnit.movementExpended < selectedUnit.movementUnits && !selectedUnit.isMoving)
                         {
-                            selectedUnit.SetDestination(gridController.pathfinder.FindPath(startHex, targetHex));
+                            selectedUnit.SetDestination(ctrl.pathfinder.FindPath(startHex, targetHex));
                         }
                     }
 
                     // Detect a city click
-                    if (hit.collider.CompareTag("City") && !EventSystem.current.IsPointerOverGameObject())
+                    if (hit.collider.CompareTag("PlayerCity") && !EventSystem.current.IsPointerOverGameObject())
                     {
                         selectedCity = hit.collider.GetComponent<City>();
                         if (selectedUnit != null)
@@ -154,14 +156,14 @@ public class TurnManager : MonoBehaviour
                     // Handle city attack
                     if (hit.collider.CompareTag("EnemyCity") && selectedUnit != null)
                     {
-                        HexagonGame selectedUnitHex = gridController.gameHexagons[selectedUnit.coordinates.x, selectedUnit.coordinates.y];
+                        HexagonGame selectedUnitHex = ctrl.gameHexagons[selectedUnit.coordinates.x, selectedUnit.coordinates.y];
                         HexagonGame cityHex = hit.transform.GetComponent<HexagonGame>();
 
                         // Check if the city is on a neighboring hex
-                        if (gridController.GetGameNeighbors(selectedUnitHex).Contains(cityHex))
+                        if (ctrl.GetGameNeighbors(selectedUnitHex).Contains(cityHex))
                         {
                             // Initiate combat with the city
-                            AttackCity(selectedUnit, cityHex.tag);
+                            StartCoroutine(AttackCity(selectedUnit, cityHex.tag));
                         }
                     }
                 }
@@ -169,26 +171,31 @@ public class TurnManager : MonoBehaviour
         }
     }
 
-    //TODO do death method for units instead of destroy directly
-    private void AttackCity(Unit attacker, string tag) //TODO test // add animations // add ignoreUserinput
+    private IEnumerator AttackCity(Unit attacker, string tag) //TODO test
     {
         attacker.hasAttacked = true;
+        attacker.isFighting = true;
+        disablePlayerInput = true;
         if (tag == "EnemyCity")
         {
-            Vector3 cityPos = player.city.transform.position;
-            cityPos.y = 2.2f;
+            Vector3 cityPos = enemy.city.transform.position;
+            cityPos.y = 3f;
             StartCoroutine(RotateTowards(attacker, cityPos));
-            Vector3 direction = (attacker.gameObject.transform.position - enemy.city.gameObject.transform.position).normalized;
+            Vector3 direction = (attacker.gameObject.transform.position - cityPos).normalized;
             Quaternion lookRotation = Quaternion.LookRotation(new Vector3(direction.x, direction.y, direction.z));
-            Instantiate(gridController.cityAttackParticle, enemy.city.gameObject.transform.position, lookRotation);
+            Instantiate(ctrl.cityAttackParticle, enemy.city.gameObject.transform.position, lookRotation);
+            
+            yield return new WaitForSeconds(combatTime);
 
-            // Example logic: reduce city health by the attacking unit's attack value
+            // reduce city health by the attacking unit's attack value
             enemy.city.defenseHp -= attacker.atk;
-
+            HUDctrl.Notify(attacker.owner.playerName + " unit attacks the enemy city doing " + attacker.atk + " damage");
+            HUDctrl.Notify("Enemy city has " + enemy.city.defenseHp + " hp left");
+            attacker.isFighting = false;
             // Check if the city has been destroyed
             if (enemy.city.defenseHp <= 0)
             {
-                //TODO implement win 
+                StartCoroutine(DestroyCity(enemy));
             }
             else
             {
@@ -196,28 +203,32 @@ public class TurnManager : MonoBehaviour
 
                 if (attacker.hp <= 0)
                 {
-                    Destroy(attacker.gameObject);  // Remove player unit from the game
-                    HUDctrl.Notify(attacker.name + " has been defeated!");
+                    StartCoroutine(KillUnit(attacker, dyingTime));
+                    yield return new WaitForSeconds(2);
+                    Destroy(attacker.gameObject);  // Remove unit from the game
+                    HUDctrl.Notify(attacker.owner.playerName + " unit has been defeated!");
                 }
             }
         }
         else
         {
             Vector3 cityPos = player.city.transform.position;
-            cityPos.y = 2.2f;
+            cityPos.y = 3f;
             StartCoroutine(RotateTowards(attacker, cityPos));
-            Vector3 direction = (attacker.gameObject.transform.position - player.city.gameObject.transform.position).normalized;
+            Vector3 direction = (attacker.gameObject.transform.position - cityPos).normalized;
             Quaternion lookRotation = Quaternion.LookRotation(new Vector3(direction.x, direction.y, direction.z));
-            Instantiate(gridController.cityAttackParticle, player.city.gameObject.transform.position, lookRotation);
+            Instantiate(ctrl.cityAttackParticle, player.city.gameObject.transform.position, lookRotation);
             StartCoroutine(RotateTowards(attacker, player.city.transform.position));
 
-            // Example logic: reduce city health by the attacking unit's attack value
+            // reduce city health by the attacking unit's attack value
             player.city.defenseHp -= attacker.atk;
-
+            HUDctrl.Notify(attacker.owner.playerName + " unit attacks the player city doing " + attacker.atk + " damage");
+            HUDctrl.Notify("Plyaer city has " + player.city.defenseHp + " hp left");
+            attacker.isFighting = false;
             // Check if the city has been destroyed
             if (player.city.defenseHp <= 0)
             {
-                //TODO implement lose 
+                StartCoroutine(DestroyCity(player));
             }
             else
             {
@@ -225,10 +236,32 @@ public class TurnManager : MonoBehaviour
 
                 if (attacker.hp <= 0)
                 {
-                    Destroy(attacker.gameObject);  // Remove player unit from the game
-                   HUDctrl.Notify(attacker.name + " has been defeated!");
+                    StartCoroutine(KillUnit(attacker, dyingTime));
+                    yield return new WaitForSeconds(2);
+                    HUDctrl.Notify(attacker.owner.playerName + " unit has been defeated!");
                 }
             }
+        }
+        disablePlayerInput = false;
+    }
+
+    public IEnumerator DestroyCity(Player loser)
+    {
+        if (loser == enemy)
+        {
+            Instantiate(ctrl.cityDestroyedParticle, loser.city.transform);
+            yield return new WaitForSeconds(5);
+            Destroy(loser.city.gameObject);
+            int playerScore = player.GetScore();
+            endScreenCtrl.ShowEndScreen(true, playerScore);  // Player wins
+        }
+        else if (loser == player)
+        {
+            Instantiate(ctrl.cityDestroyedParticle, loser.city.transform);
+            yield return new WaitForSeconds(5);
+            Destroy(loser.city.gameObject);
+            int playerScore = player.GetScore();
+            endScreenCtrl.ShowEndScreen(false, playerScore);  // Player loses
         }
     }
 
@@ -260,12 +293,12 @@ public class TurnManager : MonoBehaviour
         float defenseModifier = 1f; // Default no modifier
 
         // Determine Terrain-based Modifiers
-        if (defenderHex.hexType.Equals(gridController.mountainHex))
+        if (defenderHex.hexType.Equals(ctrl.mountainHex))
         {
             attackModifier -= 0.2f;
             defenseModifier += 0.3f; // Mountain gives defender 30% defense boost
         }
-        else if (defenderHex.hexType.Equals(gridController.forestHex))
+        else if (defenderHex.hexType.Equals(ctrl.forestHex))
         {
             defenseModifier += 0.2f; // Forest gives defender 20% defense boost
         }
@@ -300,7 +333,7 @@ public class TurnManager : MonoBehaviour
         // Check if enemy unit is still alive
         if (defender.hp <= 0)
         {
-            HUDctrl.Notify(defender.name + " has been defeated!");
+            HUDctrl.Notify(defender.owner.playerName + " unit has been defeated!");
             defenderDead = true;
             StartCoroutine(KillUnit(defender, dyingTime));
             yield return new WaitForSeconds(dyingTime);
@@ -316,7 +349,7 @@ public class TurnManager : MonoBehaviour
             // Check if player unit is still alive
             if (attacker.hp <= 0)
             {
-                HUDctrl.Notify(attacker.name + " has been defeated!");
+                HUDctrl.Notify(attacker.owner.playerName + " unit has been defeated!");
                 StartCoroutine(KillUnit(attacker, dyingTime));
                 yield return new WaitForSeconds(dyingTime);
             }
@@ -330,9 +363,9 @@ public class TurnManager : MonoBehaviour
     {
         unit.isDying = true;
         unit.owner.units.Remove(unit);
-        gridController.gameHexagons[unit.coordinates.x, unit.coordinates.y].tag = "MovableTerrain";
+        ctrl.gameHexagons[unit.coordinates.x, unit.coordinates.y].tag = "MovableTerrain";
         yield return new WaitForSeconds(dieTime);
-        Instantiate(gridController.deathParticle, unit.gameObject.transform.position, Quaternion.Euler(-90, 0, 0));
+        Instantiate(ctrl.deathParticle, unit.gameObject.transform.position, Quaternion.Euler(-90, 0, 0));
         Destroy(unit.gameObject); // Remove enemy unit from the game
 
     }
@@ -355,30 +388,6 @@ public class TurnManager : MonoBehaviour
 
         // Ensure the final rotation is exactly the target rotation after the loop ends
         unit.transform.rotation = lookRotation;
-    }
-
-    bool AllPlayerUnitsMoved()
-    {
-        foreach (var unit in player.units)
-        {
-            if (unit.movementExpended < unit.movementUnits)
-            {
-                return false;  // If any player unit still has movement left
-            }
-        }
-        return true;
-    }
-
-    bool AllEnemyUnitsMoved()
-    {
-        foreach (var unit in enemy.units)
-        {
-            if (unit.movementExpended < unit.movementUnits)
-            {
-                return false;  // If any enemy unit still has movement left
-            }
-        }
-        return true;
     }
 
     public void EndPlayerTurn()
@@ -407,9 +416,10 @@ public class TurnManager : MonoBehaviour
 
     void StartPlayerTurn()
     {
+        turnCount++;
+        HUDctrl.Notify("---------Turn " + turnCount + " starts---------");
         player.GenerateFundsPerTurn();
         ProgressWeather();
-        // Any logic to prepare the player’s turn, like refreshing UI
         HUDctrl.Notify(player.playerName + " turn starts");
     }
 
@@ -417,208 +427,226 @@ public class TurnManager : MonoBehaviour
     {
         HUDctrl.Notify(enemy.playerName + " turn starts");
 
+        // Economic actions (funds generation, upgrades, etc.)
+        yield return StartCoroutine(HandleAIEconomics());
+
+        // Move all units
+        yield return StartCoroutine(MoveEnemyUnits());
+
+        // Wait for all units to finish their actions (moving, fighting, etc.)
+        yield return StartCoroutine(WaitForUnitsToFinishActions());
+
+        // After moving, check for attacks
+        yield return StartCoroutine(HandleUnitAttacks());
+
+        // Final wait for all units to finish after potential attacks
+        yield return StartCoroutine(WaitForUnitsToFinishActions());
+
+        // End the enemy turn
+        EndEnemyTurn();
+    }
+
+    IEnumerator HandleAIEconomics()
+    {
         enemy.GenerateFundsPerTurn();
 
-        // Step 1: AI Economic Decisions (Smart Priority)
-
         int unitCount = enemy.units.Count;
-        int cityLevel = enemy.city.level;  // Assuming city defense HP can represent its level (change if needed)
+        int cityLevel = enemy.city.level;
         int unitLevel = enemy.unitUpgradeLevel;
 
-        int trainUnitCost = 200;  // Example cost for training units
-        int upgradeUnitCost = 150;  // Example cost for upgrading units
-        int upgradeCityCost = 100;  // Example cost for upgrading city
-
-        // Priority 1: If AI has few units, prioritize training new units
-        if (unitCount < 5) // Example threshold for "few units"
+        // Priority 1: Train new units if few units exist //todo add variable for unit max enemy
+        if (unitCount < 5 && enemy.GetFunds() >= ctrl.TRAIN_UNIT_COST && enemy.SpendFunds(ctrl.TRAIN_UNIT_COST))
         {
-            if (enemy.GetFunds() >= trainUnitCost && enemy.SpendFunds(trainUnitCost))
+            if (enemy.city.TrainUnit())
             {
-                if (enemy.city.TrainUnit())
-                {
-                    yield return new WaitForSeconds(0.5f);  // Small delay after unit training
-                }
+                yield return new WaitForSeconds(0.5f);
             }
         }
 
-        // Priority 2: If AI has many units, prioritize upgrading them
-        if (unitCount >= 5)
+        // Priority 2: Upgrade units if the AI has many units
+        else if (unitCount >= 5 && enemy.GetFunds() >= ctrl.UNIT_UPGRADE_COST && enemy.SpendFunds(ctrl.UNIT_UPGRADE_COST))
         {
-            if (enemy.GetFunds() >= upgradeUnitCost && enemy.SpendFunds(upgradeUnitCost))
-            {
-                enemy.city.UpgradeUnits();
-                yield return new WaitForSeconds(0.5f);  // Small delay after upgrading units
-            }
+            enemy.city.UpgradeUnits();
+            yield return new WaitForSeconds(0.5f);
         }
 
-        // Priority 3: If unit level is higher than the city level, upgrade the city
-        if (unitLevel > cityLevel)
+        // Priority 3: Upgrade the city if unit level exceeds city level
+        else if (unitLevel > cityLevel && enemy.GetFunds() >= ctrl.CITY_UPGRADE_COST && enemy.SpendFunds(ctrl.CITY_UPGRADE_COST))
         {
-            if (enemy.GetFunds() >= upgradeCityCost && enemy.SpendFunds(upgradeCityCost))
+            enemy.city.UpgradeCity();
+            yield return new WaitForSeconds(0.5f);
+        }
+    }
+
+    IEnumerator MoveEnemyUnits()
+    {
+        if (player.units.Count == 0)
+        {
+            // If no player units, AI should focus solely on attacking the city
+            foreach (Unit enemyUnit in enemy.units)
             {
-                enemy.city.UpgradeCity();
-                yield return new WaitForSeconds(0.5f);  // Small delay after upgrading city
+                if (enemyUnit.movementExpended >= enemyUnit.movementUnits)
+                    continue;
+
+                HexagonGame enemyUnitHex = ctrl.gameHexagons[enemyUnit.coordinates.x, enemyUnit.coordinates.y];
+                yield return StartCoroutine(MoveUnitTowardsCity(enemyUnit, enemyUnitHex));
             }
+            yield break;
         }
 
-        // Step 1: Loop through each enemy unit to move them
         foreach (Unit enemyUnit in enemy.units)
         {
-            // Skip units that have already moved
             if (enemyUnit.movementExpended >= enemyUnit.movementUnits)
                 continue;
 
-            // Find the nearest player unit
-            Unit closestPlayerUnit = null;
-            float shortestDistance = float.MaxValue;
+            Unit closestPlayerUnit = FindClosestPlayerUnit(enemyUnit);
+            HexagonGame enemyUnitHex = ctrl.gameHexagons[enemyUnit.coordinates.x, enemyUnit.coordinates.y];
 
-            foreach (Unit playerUnit in player.units)
+            if (ShouldTargetCity(closestPlayerUnit, enemyUnit))
             {
-                float distance = Vector3.Distance(enemyUnit.transform.position, playerUnit.transform.position);
-                if (distance < shortestDistance)
-                {
-                    shortestDistance = distance;
-                    closestPlayerUnit = playerUnit;
-                }
-            }
-
-            // Step 2: Check for player city if no player units are nearby
-            HexagonGame enemyUnitHex = gridController.gameHexagons[enemyUnit.coordinates.x, enemyUnit.coordinates.y];
-            HexagonGame closestPlayerHex = gridController.gameHexagons[closestPlayerUnit.coordinates.x, closestPlayerUnit.coordinates.y];
-
-            // If no units are close or the city is closer than any unit, prioritize attacking the city
-            float distanceToPlayerCity = Vector3.Distance(enemyUnit.transform.position, player.city.transform.position);
-
-            if (closestPlayerUnit == null || distanceToPlayerCity < shortestDistance)
-            {
-                // Check if city is close and move toward it
-                HexagonGame playerCityHex = gridController.gameHexagons[player.city.gameHex.coordinates.x, player.city.gameHex.coordinates.y];
-
-                if (!gridController.GetGameNeighbors(enemyUnitHex).Contains(playerCityHex))
-                {
-                    // Move toward the player's city if not adjacent
-                    if (enemyUnit.movementExpended < enemyUnit.movementUnits)
-                    {
-                        List<HexagonGame> pathToCity = gridController.pathfinder.FindPath(enemyUnitHex, playerCityHex);
-                        if (pathToCity != null && pathToCity.Count > 0)
-                        {
-                            enemyUnit.SetDestination(pathToCity);
-                        }
-                    }
-                }
-                else
-                {
-                    // If adjacent to the player's city, attack it
-                    AttackCity(enemyUnit, playerCityHex.tag);
-                }
+                yield return StartCoroutine(MoveUnitTowardsCity(enemyUnit, enemyUnitHex));
             }
             else
             {
-                // Step 3: Move towards the closest player unit if not adjacent
-                if (!gridController.GetGameNeighbors(enemyUnitHex).Contains(closestPlayerHex))
-                {
-                    if (enemyUnit.movementExpended < enemyUnit.movementUnits)
-                    {
-                        List<HexagonGame> pathToPlayer = gridController.pathfinder.FindPath(enemyUnitHex, closestPlayerHex);
-                        if (pathToPlayer != null && pathToPlayer.Count > 0)
-                        {
-                            enemyUnit.SetDestination(pathToPlayer);
-                        }
-                    }
-                }
+                yield return StartCoroutine(MoveUnitTowardsPlayer(enemyUnit, closestPlayerUnit));
             }
 
             yield return new WaitForSeconds(0.5f);
         }
-
-        // Wait until all units finish moving/attacking
-        bool somethingStillMoving;
-        do
-        {
-            somethingStillMoving = false;
-            foreach (Unit enemyUnit in enemy.units)
-            {
-                if (enemyUnit.isMoving || enemyUnit.isFighting || enemyUnit.isDying)
-                {
-                    somethingStillMoving = true;
-                    break;
-                }
-            }
-
-            foreach (Unit unit in player.units)
-            {
-                if (unit.isMoving || unit.isFighting || unit.isDying)
-                {
-                    somethingStillMoving = true;
-                    break;
-                }
-            }
-            yield return new WaitForSeconds(1f);
-        } while (somethingStillMoving);
-
-        // Step 4: After moving, check for nearby player units and attack if possible
-        foreach (Unit enemyUnit in enemy.units)
-        {
-            if (enemyUnit.hasAttacked)
-                continue;
-
-            Unit closestPlayerUnit = null;
-            float shortestDistance = float.MaxValue;
-
-            foreach (Unit playerUnit in player.units)
-            {
-                float distance = Vector3.Distance(enemyUnit.transform.position, playerUnit.transform.position);
-                if (distance < shortestDistance)
-                {
-                    shortestDistance = distance;
-                    closestPlayerUnit = playerUnit;
-                }
-            }
-
-            HexagonGame enemyUnitHex = gridController.gameHexagons[enemyUnit.coordinates.x, enemyUnit.coordinates.y];
-            HexagonGame closestPlayerHex = gridController.gameHexagons[closestPlayerUnit.coordinates.x, closestPlayerUnit.coordinates.y];
-
-            if (gridController.GetGameNeighbors(enemyUnitHex).Contains(closestPlayerHex))
-            {
-                InitiateCombat(enemyUnit, closestPlayerUnit, closestPlayerHex);
-            }
-        }
-
-        // Wait until all units finish moving/attacking
-        do
-        {
-            somethingStillMoving = false;
-            foreach (Unit enemyUnit in enemy.units)
-            {
-                if (enemyUnit.isMoving || enemyUnit.isFighting || enemyUnit.isDying)
-                {
-                    somethingStillMoving = true;
-                    break;
-                }
-            }
-
-            foreach (Unit unit in player.units)
-            {
-                if (unit.isMoving || unit.isFighting || unit.isDying)
-                {
-                    somethingStillMoving = true;
-                    break;
-                }
-            }
-            yield return new WaitForSeconds(1f);
-        } while (somethingStillMoving);
-
-        // Step 5: End the enemy turn after processing all units
-        EndEnemyTurn();
     }
 
 
+    Unit FindClosestPlayerUnit(Unit enemyUnit)
+    {
+        Unit closestPlayerUnit = null;
+        float shortestDistance = float.MaxValue;
 
+        foreach (Unit playerUnit in player.units)
+        {
+            float distance = Vector3.Distance(enemyUnit.transform.position, playerUnit.transform.position);
+            if (distance < shortestDistance)
+            {
+                shortestDistance = distance;
+                closestPlayerUnit = playerUnit;
+            }
+        }
+
+        return closestPlayerUnit;
+    }
+
+    bool ShouldTargetCity(Unit closestPlayerUnit, Unit enemyUnit)
+    {
+        float distanceToPlayerCity = Vector3.Distance(enemyUnit.transform.position, player.city.transform.position);
+        return closestPlayerUnit == null || distanceToPlayerCity < Vector3.Distance(enemyUnit.transform.position, closestPlayerUnit.transform.position);
+    }
+
+    IEnumerator MoveUnitTowardsCity(Unit enemyUnit, HexagonGame enemyUnitHex)
+    {
+        HexagonGame playerCityHex = ctrl.gameHexagons[player.city.gameHex.coordinates.x, player.city.gameHex.coordinates.y];
+
+        if (!ctrl.GetGameNeighbors(enemyUnitHex).Contains(playerCityHex))
+        {
+            List<HexagonGame> pathToCity = ctrl.pathfinder.FindPath(enemyUnitHex, playerCityHex);
+            if (pathToCity != null && pathToCity.Count > 0)
+            {
+                enemyUnit.SetDestination(pathToCity);
+            }
+        }
+        else
+        {
+            yield return StartCoroutine(AttackCity(enemyUnit, playerCityHex.tag));
+        }
+    }
+
+    IEnumerator MoveUnitTowardsPlayer(Unit enemyUnit, Unit closestPlayerUnit)
+    {
+        HexagonGame enemyUnitHex = ctrl.gameHexagons[enemyUnit.coordinates.x, enemyUnit.coordinates.y];
+        HexagonGame closestPlayerHex = ctrl.gameHexagons[closestPlayerUnit.coordinates.x, closestPlayerUnit.coordinates.y];
+
+        if (!ctrl.GetGameNeighbors(enemyUnitHex).Contains(closestPlayerHex))
+        {
+            List<HexagonGame> pathToPlayer = ctrl.pathfinder.FindPath(enemyUnitHex, closestPlayerHex);
+            if (pathToPlayer != null && pathToPlayer.Count > 0)
+            {
+                enemyUnit.SetDestination(pathToPlayer);
+            }
+        }
+        yield return null;
+    }
+
+    IEnumerator WaitForUnitsToFinishActions()
+    {
+        bool somethingStillMoving;
+        do
+        {
+            somethingStillMoving = CheckIfUnitsStillMoving(enemy.units) || CheckIfUnitsStillMoving(player.units);
+            yield return new WaitForSeconds(1f);
+        } while (somethingStillMoving);
+    }
+
+    bool CheckIfUnitsStillMoving(List<Unit> units)
+    {
+        foreach (Unit unit in units)
+        {
+            if (unit.isMoving || unit.isFighting || unit.isDying)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    IEnumerator HandleUnitAttacks()
+    {
+        if (player.units.Count == 0)
+        {
+            // If no player units, skip unit-to-unit combat and focus on city attacks
+            foreach (Unit enemyUnit in enemy.units)
+            {
+                yield return StartCoroutine(HandleCityAttacks(enemyUnit));
+            }
+            yield break;
+        }
+
+        foreach (Unit enemyUnit in enemy.units)
+        {
+            if (!enemyUnit.hasAttacked)
+            {
+                Unit closestPlayerUnit = FindClosestPlayerUnit(enemyUnit);
+                if (closestPlayerUnit != null)
+                {
+                    HexagonGame closestPlayerHex = ctrl.gameHexagons[closestPlayerUnit.coordinates.x, closestPlayerUnit.coordinates.y];
+                    HexagonGame enemyUnitHex = ctrl.gameHexagons[enemyUnit.coordinates.x, enemyUnit.coordinates.y];
+
+                    if (ctrl.GetGameNeighbors(enemyUnitHex).Contains(closestPlayerHex))
+                    {
+                        InitiateCombat(enemyUnit, closestPlayerUnit, closestPlayerHex);
+                    }
+                }
+            }
+
+            yield return StartCoroutine(HandleCityAttacks(enemyUnit));
+        }
+    }
+
+
+    IEnumerator HandleCityAttacks(Unit enemyUnit)
+    {
+        HexagonGame enemyUnitHex = ctrl.gameHexagons[enemyUnit.coordinates.x, enemyUnit.coordinates.y];
+
+        foreach (HexagonGame hex in ctrl.GetGameNeighbors(enemyUnitHex))
+        {
+            if (hex.CompareTag("PlayerCity"))
+            {
+                yield return StartCoroutine(AttackCity(enemyUnit, hex.tag));
+            }
+        }
+    }
 
     void ProgressWeather()
     {
         Array values = Enum.GetValues(typeof(WeatherState));
-        Random random = new Random();
+        Random random = new();
         WeatherState randomWeather = (WeatherState)values.GetValue(random.Next(values.Length));
 
         weatherQueue.Enqueue((WeatherState)values.GetValue(random.Next(values.Length)));

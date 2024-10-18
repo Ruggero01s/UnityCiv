@@ -5,11 +5,11 @@ TagManager:
   serializedVersion: 2
   tags:
   - MovableTerrain
-  - City
   - EnemyCity
   - PlayerUnit
   - EnemyUnit
   - Occupied
+  - PlayerCity
   layers:
   - Default
   - TransparentFX

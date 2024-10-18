@@ -16,7 +16,7 @@ public class GeneralHUDController : MonoBehaviour
 
     public Transform logContentTransform;  // The parent Transform inside the ScrollRect where messages will go
     public ScrollRect logScrollRect;  // The ScrollRect for the notification log
-    private List<string> messageLog = new List<string>();  // Store all messages in a list
+    private List<string> messageLog = new();  // Store all messages in a list
     private bool isLogPanelOpen = false;  // Tracks if the log panel is open or closed
 
     void Start()

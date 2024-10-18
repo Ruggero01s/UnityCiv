@@ -16,7 +16,7 @@ public class CameraController : MonoBehaviour
     public Vector3 newPosition;
     public Quaternion newRotation;
 
-    public Vector3 zoomAmount = new Vector3(1, 1, 1);
+    public Vector3 zoomAmount = new(1, 1, 1);
     public Vector3 newZoom;
 
     // Camera zoom speed normalization factor

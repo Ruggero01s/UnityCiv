@@ -5,15 +5,12 @@ public class Player
 {
     public string playerName;
     public Color ownedColor; // Color assigned to the player's controlled hexes
-	public List<Unit> units = new List<Unit>();
-
+	public List<Unit> units = new();
     public City city;
-
+    public GridController ctrl;
     private List<HexagonGame> controlledHexes;
     private int funds = 0;
-
     private int score = 0;
-
     public int unitUpgradeLevel;
 
 
@@ -47,8 +44,8 @@ public class Player
     // Each turn, this function generates funds based on controlled hexes
     public void GenerateFundsPerTurn()
     {
-        // Example: 10 units of funds per hex
-        int fundsToGenerate = controlledHexes.Count * 10;
+        // 10 units of funds per hex + 50 default funds
+        int fundsToGenerate = controlledHexes.Count * ctrl.FUNDS_PER_HEX + ctrl.DEFAULT_FUNDS_PER_TURN;
         funds += fundsToGenerate;
         score += fundsToGenerate;
     }
