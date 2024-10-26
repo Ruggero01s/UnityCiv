@@ -64,7 +64,7 @@ public class GridController : MonoBehaviour
 
 	public TurnManager turnManager;
 	public GeneralHUDController HUDctrl;
-
+	public Canvas gameHUDcanvas;
 	public ParticleSystem deathParticle;
 	public ParticleSystem spawnParticle;
 	public ParticleSystem cityAttackParticle;

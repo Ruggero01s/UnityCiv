@@ -14,6 +14,7 @@ public class TurnManager : MonoBehaviour
     public Player enemy;
     public Player player;
 
+    public Queue<Unit> toDestroy;
     private Unit selectedUnit;
     private City selectedCity;
 
@@ -50,6 +51,8 @@ public class TurnManager : MonoBehaviour
         player = ctrl.player;
         enemy = ctrl.enemy;
 
+        toDestroy = new();
+
         Array values = Enum.GetValues(typeof(WeatherState));
         Random random = new();
 
@@ -84,6 +87,7 @@ public class TurnManager : MonoBehaviour
 
                 if (Physics.Raycast(ray, out hit) && !EventSystem.current.IsPointerOverGameObject())
                 {
+                    // debug instantiate Instantiate(ctrl.cityDestroyedParticle, hit.collider.transform.position, Quaternion.Euler(-90, 0, 0));
                     // Handle player unit selection
                     if (hit.collider.CompareTag("PlayerUnit"))
                     {
@@ -181,6 +185,7 @@ public class TurnManager : MonoBehaviour
             Vector3 cityPos = enemy.city.transform.position;
             cityPos.y = 3f;
             StartCoroutine(RotateTowards(attacker, cityPos));
+
             Vector3 direction = (attacker.gameObject.transform.position - cityPos).normalized;
             Quaternion lookRotation = Quaternion.LookRotation(new Vector3(direction.x, direction.y, direction.z));
             Instantiate(ctrl.cityAttackParticle, enemy.city.gameObject.transform.position, lookRotation);
@@ -205,7 +210,6 @@ public class TurnManager : MonoBehaviour
                 {
                     StartCoroutine(KillUnit(attacker, dyingTime));
                     yield return new WaitForSeconds(2);
-                    Destroy(attacker.gameObject);  // Remove unit from the game
                     HUDctrl.Notify(attacker.owner.playerName + " unit has been defeated!");
                 }
             }
@@ -215,10 +219,10 @@ public class TurnManager : MonoBehaviour
             Vector3 cityPos = player.city.transform.position;
             cityPos.y = 3f;
             StartCoroutine(RotateTowards(attacker, cityPos));
+
             Vector3 direction = (attacker.gameObject.transform.position - cityPos).normalized;
             Quaternion lookRotation = Quaternion.LookRotation(new Vector3(direction.x, direction.y, direction.z));
             Instantiate(ctrl.cityAttackParticle, player.city.gameObject.transform.position, lookRotation);
-            StartCoroutine(RotateTowards(attacker, player.city.transform.position));
 
             // reduce city health by the attacking unit's attack value
             player.city.defenseHp -= attacker.atk;
@@ -249,18 +253,20 @@ public class TurnManager : MonoBehaviour
     {
         if (loser == enemy)
         {
-            Instantiate(ctrl.cityDestroyedParticle, loser.city.transform);
+            Instantiate(ctrl.cityDestroyedParticle, loser.city.transform.position, Quaternion.Euler(-90,0,0));
             yield return new WaitForSeconds(5);
             Destroy(loser.city.gameObject);
             int playerScore = player.GetScore();
+            ctrl.gameHUDcanvas.gameObject.SetActive(false);
             endScreenCtrl.ShowEndScreen(true, playerScore);  // Player wins
         }
         else if (loser == player)
         {
-            Instantiate(ctrl.cityDestroyedParticle, loser.city.transform);
+            Instantiate(ctrl.cityDestroyedParticle, loser.city.transform.position, Quaternion.Euler(-90,0,0));
             yield return new WaitForSeconds(5);
             Destroy(loser.city.gameObject);
             int playerScore = player.GetScore();
+            ctrl.gameHUDcanvas.gameObject.SetActive(false);
             endScreenCtrl.ShowEndScreen(false, playerScore);  // Player loses
         }
     }
@@ -331,7 +337,7 @@ public class TurnManager : MonoBehaviour
         defender.isFighting = false;
 
         // Check if enemy unit is still alive
-        if (defender.hp <= 0)
+        if (defender.hp <= 0 && !defender.isDying)
         {
             HUDctrl.Notify(defender.owner.playerName + " unit has been defeated!");
             defenderDead = true;
@@ -366,8 +372,8 @@ public class TurnManager : MonoBehaviour
         ctrl.gameHexagons[unit.coordinates.x, unit.coordinates.y].tag = "MovableTerrain";
         yield return new WaitForSeconds(dieTime);
         Instantiate(ctrl.deathParticle, unit.gameObject.transform.position, Quaternion.Euler(-90, 0, 0));
-        Destroy(unit.gameObject); // Remove enemy unit from the game
-
+        unit.gameObject.SetActive(false);
+        toDestroy.Enqueue(unit);
     }
 
     IEnumerator RotateTowards(Unit unit, Vector3 targetPosition)
@@ -397,7 +403,7 @@ public class TurnManager : MonoBehaviour
             unit.movementExpended = 0;  // Reset movement for all player units
             unit.hasAttacked = false;
         }
-
+        DestroyDeadUnits();
         currentTurn = TurnState.EnemyTurn;
         StartCoroutine(StartEnemyTurn());  // Start the enemy turn
     }
@@ -409,9 +415,18 @@ public class TurnManager : MonoBehaviour
             unit.movementExpended = 0; // Reset movement for all enemy units
             unit.hasAttacked = false;
         }
-
+        DestroyDeadUnits();
         currentTurn = TurnState.PlayerTurn;
         StartPlayerTurn();  // Start the next player turn
+    }
+
+    public void DestroyDeadUnits()
+    {
+        while(toDestroy.Count>0)
+        {
+            var unit = toDestroy.Dequeue();
+            Destroy(unit.gameObject);
+        }
     }
 
     void StartPlayerTurn()
