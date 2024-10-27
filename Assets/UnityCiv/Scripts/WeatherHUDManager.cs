@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -26,10 +27,9 @@ public class WeatherHUDManager : MonoBehaviour
 
     public void UpdateQueue(Queue<TurnManager.WeatherState> queue)
     {
-        Queue<TurnManager.WeatherState> copy = new(queue);
         for (int i = 0; i<3;i++)
         {
-            TurnManager.WeatherState next = copy.Dequeue();
+            TurnManager.WeatherState next = queue.ElementAt(i);
             switch (next)
             {
                 case TurnManager.WeatherState.Clear:

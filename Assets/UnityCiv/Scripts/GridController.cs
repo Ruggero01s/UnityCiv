@@ -522,6 +522,7 @@ public class GridController : MonoBehaviour
 
 			HexagonGame chosenHex = neighbors[Random.Range(0, neighbors.Count)];
 			chosenHex.tag = "Occupied";
+			chosenHex.ClaimHex(owner);
 			Vector3 pos = chosenHex.rawPosition;
 			pos.y = 2.36f;
 			GameObject unit;
@@ -531,6 +532,7 @@ public class GridController : MonoBehaviour
 				unit = Instantiate(playerUnitModel, pos, Quaternion.identity);
 			}
 			Instantiate(spawnParticle, chosenHex.transform.position, Quaternion.Euler(-90,0,0));
+			
 
 			Unit unitComp = unit.GetComponent<Unit>();
 			unitComp.coordinates = chosenHex.coordinates;

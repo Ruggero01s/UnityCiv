@@ -59,6 +59,8 @@ public class TurnManager : MonoBehaviour
         weatherQueue = new Queue<WeatherState>();
         weatherQueue.Enqueue((WeatherState)values.GetValue(random.Next(values.Length)));
         weatherQueue.Enqueue((WeatherState)values.GetValue(random.Next(values.Length)));
+        weatherQueue.Enqueue((WeatherState)values.GetValue(random.Next(values.Length)));
+        weatherHUDManager.UpdateQueue(weatherQueue);
     }
 
     void Update()
@@ -164,7 +166,7 @@ public class TurnManager : MonoBehaviour
                         HexagonGame cityHex = hit.transform.GetComponent<HexagonGame>();
 
                         // Check if the city is on a neighboring hex
-                        if (ctrl.GetGameNeighbors(selectedUnitHex).Contains(cityHex))
+                        if (ctrl.GetGameNeighbors(selectedUnitHex).Contains(cityHex) && !selectedUnit.hasAttacked)
                         {
                             // Initiate combat with the city
                             StartCoroutine(AttackCity(selectedUnit, cityHex.tag));
@@ -189,7 +191,7 @@ public class TurnManager : MonoBehaviour
             Vector3 direction = (attacker.gameObject.transform.position - cityPos).normalized;
             Quaternion lookRotation = Quaternion.LookRotation(new Vector3(direction.x, direction.y, direction.z));
             Instantiate(ctrl.cityAttackParticle, enemy.city.gameObject.transform.position, lookRotation);
-            
+
             yield return new WaitForSeconds(combatTime);
 
             // reduce city health by the attacking unit's attack value
@@ -253,7 +255,7 @@ public class TurnManager : MonoBehaviour
     {
         if (loser == enemy)
         {
-            Instantiate(ctrl.cityDestroyedParticle, loser.city.transform.position, Quaternion.Euler(-90,0,0));
+            Instantiate(ctrl.cityDestroyedParticle, loser.city.transform.position, Quaternion.Euler(-90, 0, 0));
             yield return new WaitForSeconds(5);
             Destroy(loser.city.gameObject);
             int playerScore = player.GetScore();
@@ -262,7 +264,7 @@ public class TurnManager : MonoBehaviour
         }
         else if (loser == player)
         {
-            Instantiate(ctrl.cityDestroyedParticle, loser.city.transform.position, Quaternion.Euler(-90,0,0));
+            Instantiate(ctrl.cityDestroyedParticle, loser.city.transform.position, Quaternion.Euler(-90, 0, 0));
             yield return new WaitForSeconds(5);
             Destroy(loser.city.gameObject);
             int playerScore = player.GetScore();
@@ -368,7 +370,6 @@ public class TurnManager : MonoBehaviour
     public IEnumerator KillUnit(Unit unit, float dieTime)
     {
         unit.isDying = true;
-        unit.owner.units.Remove(unit);
         ctrl.gameHexagons[unit.coordinates.x, unit.coordinates.y].tag = "MovableTerrain";
         yield return new WaitForSeconds(dieTime);
         Instantiate(ctrl.deathParticle, unit.gameObject.transform.position, Quaternion.Euler(-90, 0, 0));
@@ -422,9 +423,10 @@ public class TurnManager : MonoBehaviour
 
     public void DestroyDeadUnits()
     {
-        while(toDestroy.Count>0)
+        while (toDestroy.Count > 0)
         {
             var unit = toDestroy.Dequeue();
+            unit.owner.units.Remove(unit);
             Destroy(unit.gameObject);
         }
     }
@@ -500,7 +502,7 @@ public class TurnManager : MonoBehaviour
             // If no player units, AI should focus solely on attacking the city
             foreach (Unit enemyUnit in enemy.units)
             {
-                if (enemyUnit.movementExpended >= enemyUnit.movementUnits)
+                if (enemyUnit.movementExpended >= enemyUnit.movementUnits || !enemyUnit.gameObject.activeSelf)
                     continue;
 
                 HexagonGame enemyUnitHex = ctrl.gameHexagons[enemyUnit.coordinates.x, enemyUnit.coordinates.y];
@@ -511,7 +513,7 @@ public class TurnManager : MonoBehaviour
 
         foreach (Unit enemyUnit in enemy.units)
         {
-            if (enemyUnit.movementExpended >= enemyUnit.movementUnits)
+            if (enemyUnit.movementExpended >= enemyUnit.movementUnits || !enemyUnit.gameObject.activeSelf)
                 continue;
 
             Unit closestPlayerUnit = FindClosestPlayerUnit(enemyUnit);
@@ -538,6 +540,9 @@ public class TurnManager : MonoBehaviour
 
         foreach (Unit playerUnit in player.units)
         {
+            if (!playerUnit.gameObject.activeSelf)
+                continue;
+
             float distance = Vector3.Distance(enemyUnit.transform.position, playerUnit.transform.position);
             if (distance < shortestDistance)
             {
@@ -569,7 +574,8 @@ public class TurnManager : MonoBehaviour
         }
         else
         {
-            yield return StartCoroutine(AttackCity(enemyUnit, playerCityHex.tag));
+            if (!enemyUnit.hasAttacked)
+                yield return StartCoroutine(AttackCity(enemyUnit, playerCityHex.tag));
         }
     }
 
@@ -603,7 +609,7 @@ public class TurnManager : MonoBehaviour
     {
         foreach (Unit unit in units)
         {
-            if (unit.isMoving || unit.isFighting || unit.isDying)
+            if ((unit.isMoving || unit.isFighting || unit.isDying) && unit.gameObject.activeSelf)
             {
                 return true;
             }
@@ -613,34 +619,31 @@ public class TurnManager : MonoBehaviour
 
     IEnumerator HandleUnitAttacks()
     {
-        if (player.units.Count == 0)
-        {
-            // If no player units, skip unit-to-unit combat and focus on city attacks
-            foreach (Unit enemyUnit in enemy.units)
-            {
-                yield return StartCoroutine(HandleCityAttacks(enemyUnit));
-            }
-            yield break;
-        }
-
         foreach (Unit enemyUnit in enemy.units)
         {
-            if (!enemyUnit.hasAttacked)
+            if (player.units.Count > 0)
             {
-                Unit closestPlayerUnit = FindClosestPlayerUnit(enemyUnit);
-                if (closestPlayerUnit != null)
+                if (!enemyUnit.hasAttacked && enemyUnit.gameObject.activeSelf)
                 {
-                    HexagonGame closestPlayerHex = ctrl.gameHexagons[closestPlayerUnit.coordinates.x, closestPlayerUnit.coordinates.y];
-                    HexagonGame enemyUnitHex = ctrl.gameHexagons[enemyUnit.coordinates.x, enemyUnit.coordinates.y];
-
-                    if (ctrl.GetGameNeighbors(enemyUnitHex).Contains(closestPlayerHex))
+                    Unit closestPlayerUnit = FindClosestPlayerUnit(enemyUnit);
+                    if (closestPlayerUnit != null)
                     {
-                        InitiateCombat(enemyUnit, closestPlayerUnit, closestPlayerHex);
+                        HexagonGame closestPlayerHex = ctrl.gameHexagons[closestPlayerUnit.coordinates.x, closestPlayerUnit.coordinates.y];
+                        HexagonGame enemyUnitHex = ctrl.gameHexagons[enemyUnit.coordinates.x, enemyUnit.coordinates.y];
+
+                        if (ctrl.GetGameNeighbors(enemyUnitHex).Contains(closestPlayerHex))
+                        {
+                            InitiateCombat(enemyUnit, closestPlayerUnit, closestPlayerHex);
+                        }
                     }
                 }
+            }else
+            {
+                if (!enemyUnit.hasAttacked)
+                    yield return StartCoroutine(HandleCityAttacks(enemyUnit));
+                else
+                    yield return null;
             }
-
-            yield return StartCoroutine(HandleCityAttacks(enemyUnit));
         }
     }
 
@@ -664,8 +667,6 @@ public class TurnManager : MonoBehaviour
         Random random = new();
         WeatherState randomWeather = (WeatherState)values.GetValue(random.Next(values.Length));
 
-        weatherQueue.Enqueue((WeatherState)values.GetValue(random.Next(values.Length)));
-        weatherQueue.Enqueue((WeatherState)values.GetValue(random.Next(values.Length)));
         weatherQueue.Dequeue();
         weatherQueue.Enqueue(randomWeather);
 
