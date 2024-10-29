@@ -6,11 +6,10 @@ using UnityEngine.UI;
 
 public class GeneralHUDController : MonoBehaviour
 {
-    public Button endTurnButton;  // Reference to the End Turn Button
-    public TurnManager turnManager;  // Reference to your GridController script
-    public Button logButton;  // Reference to the button that opens the log
-    public TextMeshProUGUI logButtonText;  // Prefab for creating new messages in the log
-
+    public Button endTurnButton;  
+    public TurnManager turnManager;  
+    public Button logButton;  
+    public TextMeshProUGUI logButtonText; 
     public GameObject notifyPanel;  // Panel that holds the log and scroll view
     public TextMeshProUGUI textPrefab;  // Prefab for creating new messages in the log
 
@@ -21,15 +20,15 @@ public class GeneralHUDController : MonoBehaviour
 
     void Start()
     {
-        // Assign the Button's OnClick listener
+        // Assign listeners
         endTurnButton.onClick.AddListener(OnEndTurnButtonClick);
-        logButton.onClick.AddListener(ToggleLogPanel);  // Add listener to open/close the log panel
+        logButton.onClick.AddListener(ToggleLogPanel);
         notifyPanel.SetActive(false);  // Start with the log panel closed
     }
 
     void OnEndTurnButtonClick()
     {
-        // Call the EndTurn function from GridController
+        // Call the EndTurn function from TurnManager
         turnManager.EndPlayerTurn();
     }
 
@@ -41,12 +40,12 @@ public class GeneralHUDController : MonoBehaviour
 
         // Instantiate a new TextMeshProUGUI message element from the prefab
         TextMeshProUGUI newMessage = Instantiate(textPrefab, logContentTransform);
-        newMessage.text = newText;
+        newMessage.text = ">> " + newText;
 
         // Scroll the log to the bottom
         StartCoroutine(ScrollToBottom());
 
-        // Optionally, limit the number of messages shown in the log (e.g., to last 20 messages)
+        // Limit the number of messages shown in the log
         if (logContentTransform.childCount > 20)
         {
             messageLog.RemoveAt(0);
@@ -72,6 +71,7 @@ public class GeneralHUDController : MonoBehaviour
         notifyPanel.SetActive(isLogPanelOpen);
     }
 
+    // Set interactiveness of EndTurn button
     public void UpdateEndTurnButtonState(bool isEnabled)
     {
         endTurnButton.interactable = isEnabled;

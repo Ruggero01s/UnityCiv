@@ -4,8 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using Random = System.Random;
-//todo city killing an enemy unit breaks ai
-//todo finish end game
+
 public class TurnManager : MonoBehaviour
 {
     public enum TurnState { PlayerTurn, EnemyTurn }
@@ -258,7 +257,7 @@ public class TurnManager : MonoBehaviour
             Instantiate(ctrl.cityDestroyedParticle, loser.city.transform.position, Quaternion.Euler(-90, 0, 0));
             yield return new WaitForSeconds(5);
             Destroy(loser.city.gameObject);
-            int playerScore = player.GetScore();
+            int playerScore = player.score;
             ctrl.gameHUDcanvas.gameObject.SetActive(false);
             endScreenCtrl.ShowEndScreen(true, playerScore);  // Player wins
         }
@@ -267,7 +266,7 @@ public class TurnManager : MonoBehaviour
             Instantiate(ctrl.cityDestroyedParticle, loser.city.transform.position, Quaternion.Euler(-90, 0, 0));
             yield return new WaitForSeconds(5);
             Destroy(loser.city.gameObject);
-            int playerScore = player.GetScore();
+            int playerScore = player.score;
             ctrl.gameHUDcanvas.gameObject.SetActive(false);
             endScreenCtrl.ShowEndScreen(false, playerScore);  // Player loses
         }
@@ -401,8 +400,7 @@ public class TurnManager : MonoBehaviour
     {
         foreach (var unit in player.units)
         {
-            unit.movementExpended = 0;  // Reset movement for all player units
-            unit.hasAttacked = false;
+            unit.NewTurn();
         }
         DestroyDeadUnits();
         currentTurn = TurnState.EnemyTurn;
@@ -413,8 +411,7 @@ public class TurnManager : MonoBehaviour
     {
         foreach (var unit in enemy.units)
         {
-            unit.movementExpended = 0; // Reset movement for all enemy units
-            unit.hasAttacked = false;
+            unit.NewTurn();
         }
         DestroyDeadUnits();
         currentTurn = TurnState.PlayerTurn;
@@ -442,6 +439,9 @@ public class TurnManager : MonoBehaviour
 
     IEnumerator StartEnemyTurn()
     {
+        // Wait for all units to finish their actions (moving, fighting, etc.)
+        yield return StartCoroutine(WaitForUnitsToFinishActions());
+
         HUDctrl.Notify(enemy.playerName + " turn starts");
 
         // Economic actions (funds generation, upgrades, etc.)
@@ -472,7 +472,7 @@ public class TurnManager : MonoBehaviour
         int unitLevel = enemy.unitUpgradeLevel;
 
         // Priority 1: Train new units if few units exist //todo add variable for unit max enemy
-        if (unitCount < 5 && enemy.GetFunds() >= ctrl.TRAIN_UNIT_COST && enemy.SpendFunds(ctrl.TRAIN_UNIT_COST))
+        if (unitCount < ctrl.MAX_ENEMY_UNITS && enemy.funds >= ctrl.TRAIN_UNIT_COST && enemy.SpendFunds(ctrl.TRAIN_UNIT_COST))
         {
             if (enemy.city.TrainUnit())
             {
@@ -481,14 +481,14 @@ public class TurnManager : MonoBehaviour
         }
 
         // Priority 2: Upgrade units if the AI has many units
-        else if (unitCount >= 5 && enemy.GetFunds() >= ctrl.UNIT_UPGRADE_COST && enemy.SpendFunds(ctrl.UNIT_UPGRADE_COST))
+        else if (unitCount >= ctrl.MAX_ENEMY_UNITS && enemy.funds >= ctrl.UNIT_UPGRADE_COST && enemy.SpendFunds(ctrl.UNIT_UPGRADE_COST))
         {
             enemy.city.UpgradeUnits();
             yield return new WaitForSeconds(0.5f);
         }
 
         // Priority 3: Upgrade the city if unit level exceeds city level
-        else if (unitLevel > cityLevel && enemy.GetFunds() >= ctrl.CITY_UPGRADE_COST && enemy.SpendFunds(ctrl.CITY_UPGRADE_COST))
+        else if (unitLevel > cityLevel && enemy.funds >= ctrl.CITY_UPGRADE_COST && enemy.SpendFunds(ctrl.CITY_UPGRADE_COST))
         {
             enemy.city.UpgradeCity();
             yield return new WaitForSeconds(0.5f);
@@ -601,7 +601,7 @@ public class TurnManager : MonoBehaviour
         do
         {
             somethingStillMoving = CheckIfUnitsStillMoving(enemy.units) || CheckIfUnitsStillMoving(player.units);
-            yield return new WaitForSeconds(1f);
+            yield return new WaitForSeconds(0.3f);
         } while (somethingStillMoving);
     }
 

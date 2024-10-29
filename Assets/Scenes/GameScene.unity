@@ -1851,7 +1851,7 @@ Transform:
   m_GameObject: {fileID: 705507993}
   serializedVersion: 2
   m_LocalRotation: {x: 0.40821788, y: -0.23456968, z: 0.10938163, w: 0.8754261}
-  m_LocalPosition: {x: 20.1, y: 50.9, z: -34.8}
+  m_LocalPosition: {x: 126.2, y: 137.3, z: -218.5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3644,9 +3644,9 @@ MonoBehaviour:
   hexSizeY: 8.66
   playerCity: {fileID: 0}
   enemyCity: {fileID: 0}
-  turnManager: {fileID: 0}
-  HUDctrl: {fileID: 0}
-  gameHUDcanvas: {fileID: 0}
+  turnManager: {fileID: 1333265486}
+  HUDctrl: {fileID: 1421089101}
+  gameHUDcanvas: {fileID: 674804615}
   deathParticle: {fileID: 4596704776685712152, guid: fd3806add03584844ab0f845c4183ae7, type: 3}
   spawnParticle: {fileID: 4596704776685712152, guid: 1f0c56928377df546a4e901149ab323f, type: 3}
   cityAttackParticle: {fileID: 6002205505513432017, guid: 3f242797a19d7c645898a696aebfc773, type: 3}
@@ -5342,5 +5342,5 @@ SceneRoots:
   - {fileID: 813523491}
   - {fileID: 674804616}
   - {fileID: 75279912}
-  - {fileID: 1421089102}
   - {fileID: 560392745}
+  - {fileID: 1421089102}

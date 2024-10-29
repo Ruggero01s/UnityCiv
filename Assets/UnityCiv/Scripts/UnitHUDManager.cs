@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -8,7 +6,7 @@ public class UnitHUDManager : MonoBehaviour
 {
     public GeneralHUDController hudController;
     public GameObject unitHUDPanel;  // Reference to the City HUD panel
-    private Unit currentUnit;        // The city currently selected
+    private Unit currentUnit;        // The unit currently selected
 
     public TextMeshProUGUI hpText;
     public TextMeshProUGUI atkText;
@@ -21,6 +19,7 @@ public class UnitHUDManager : MonoBehaviour
         unitHUDPanel.SetActive(false);
     }
 
+    // Unit stats are kept updated
     void Update()
     {
         if (unitHUDPanel.activeSelf && currentUnit != null)
@@ -33,6 +32,7 @@ public class UnitHUDManager : MonoBehaviour
             unitHUDPanel.SetActive(false);
     }
 
+    // Manages active state of unit stats view
     public void OpenUnitHUD(Unit unit)
     {
         currentUnit = unit;

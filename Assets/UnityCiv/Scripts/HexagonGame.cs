@@ -20,8 +20,8 @@ public class HexagonGame : MonoBehaviour
 
     public HexagonGame cameFromHex;
 
-    // Add ownership
-    public Player owner; // Player or Faction controlling the hex
+    // Ownership
+    public Player owner;
 
     private GameObject overlay; // Reference to the overlay object
 
@@ -41,16 +41,13 @@ public class HexagonGame : MonoBehaviour
         RestoreHexColor();
     }
 
-    void Update()
-    {
-        // You can update ownership or handle visuals here if needed
-    }
-
+    // For pathfinding
     public void CalcFCost()
     {
         fCost = gCost + hCost;
     }
 
+    // To highlight hex on over
     void OnMouseEnter()
     {
         if(!EventSystem.current.IsPointerOverGameObject())
@@ -83,7 +80,7 @@ public class HexagonGame : MonoBehaviour
         overlay.transform.localPosition = new Vector3(0, 0.22f, 0); // Slightly above the hex
 
         // Set the scale to match the hex size
-        overlay.transform.localScale = new Vector3(0.7f, 0.002f, 0.7f); // Adjust based on hex size
+        overlay.transform.localScale = new Vector3(0.7f, 0.002f, 0.7f); // Adjust based on hex size (uses same mesh as hexes, just squished)
         overlay.transform.rotation = Quaternion.Euler(0, 0, 0); // Rotate to lay flat
 
         // Set the overlay material
@@ -97,10 +94,7 @@ public class HexagonGame : MonoBehaviour
     public void ClaimHex(Player newOwner)
     {
         // If the hex is already owned, remove it from the previous owner’s list
-        if (owner != null)
-        {
-            owner.RemoveControlledHex(this);
-        }
+        owner?.RemoveControlledHex(this);
 
         // Assign new ownership
         owner = newOwner;
@@ -121,7 +115,7 @@ public class HexagonGame : MonoBehaviour
     {
         if (owner != null)
         {
-            Color ownerColor = owner.ownedColor; // Assuming Player has a property for color
+            Color ownerColor = owner.ownedColor; // Change to player color
             overlay.GetComponent<Renderer>().material.color = new Color(ownerColor.r, ownerColor.g, ownerColor.b, 0.2f); // Set overlay color with some transparency
             overlay.SetActive(true); // Show overlay
         }

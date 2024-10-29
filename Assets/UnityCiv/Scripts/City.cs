@@ -1,6 +1,3 @@
-using System.Collections.Generic;
-using TMPro;
-using UnityEditor.PackageManager;
 using UnityEngine;
 
 public class City : MonoBehaviour
@@ -10,25 +7,33 @@ public class City : MonoBehaviour
     public GridController ctrl;
     public Player owner;
 
-    public int defenseAtk = 5;
+    public int defenseAtk;
 
-    public int defenseHp = 50;
+    public int defenseHp;
+    public int fundsPerTurn;
 
-    public int level = 1;
+    public int level = 0;
 
+    public void Start()
+    {
+        defenseAtk = ctrl.STARTING_CITY_DEFENSE;
+        defenseHp = ctrl.STARTING_CITY_HP;
+        fundsPerTurn = ctrl.DEFAULT_FUNDS_PER_TURN;
+    }
 
     public void UpgradeCity()
     {
-        // Logic for building a structure (e.g., adding defense or resource production)
-        ctrl.HUDctrl.Notify("Upgraded city!");
-        defenseAtk += 5;
-        defenseHp += 10;
+        // Logic for building a structure
+        ctrl.HUDctrl.Notify("Upgraded city! ");
+        defenseAtk += ctrl.CITY_DEF_UPGRADE;
+        defenseHp += ctrl.CITY_HP_UPGRADE;
+        fundsPerTurn += ctrl.FUNDS_PER_TURN_UPGRADE;
         level++;
     }
 
     public void UpgradeUnits()
     {
-        // Logic for upgrading units (e.g., increasing their power or range)
+        // Logic for upgrading units
         ctrl.HUDctrl.Notify("Upgraded units!");
 
         foreach (Unit unit in owner.units)

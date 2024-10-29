@@ -1,8 +1,7 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UIElements;
 
+// Class to be used in generation before hexTypes are assigned, represents a simple hex
 public class Hexagon
 {
 

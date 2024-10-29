@@ -1,13 +1,12 @@
-using TMPro; // If using TextMeshPro
+using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 public class PlayerFundsHUD : MonoBehaviour
 {
     public Player player;
-    public TextMeshProUGUI fundsText; // For TextMeshPro
+    public TextMeshProUGUI fundsText;
 
-    public TextMeshProUGUI scoreText; // For TextMeshPro
+    public TextMeshProUGUI scoreText;
 
 
     private bool firstUpdate = true;
@@ -37,7 +36,7 @@ public class PlayerFundsHUD : MonoBehaviour
             player = gridController.player;
             firstUpdate = false;
         }
-        UpdateFunds(player.GetFunds()); // Initialize with current funds
-        UpdateScore(player.GetScore());
+        UpdateFunds(player.funds);
+        UpdateScore(player.score);
     }
 }

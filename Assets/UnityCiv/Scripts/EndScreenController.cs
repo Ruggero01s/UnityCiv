@@ -4,10 +4,10 @@ using UnityEngine.UI;
 
 public class EndScreenController : MonoBehaviour
 {
-    public GameObject endScreenPanel;        // Panel that shows the end screen
+    public GameObject endScreenPanel;     
     public TextMeshProUGUI outcomeText;      // Text for displaying "You win" or "You lost"
-    public TextMeshProUGUI scoreText;        // Text for displaying the score
-    public Button exitButton;                // Button to exit or restart the game
+    public TextMeshProUGUI scoreText;
+    public Button exitButton;                
 
     private void Start()
     {
@@ -34,11 +34,9 @@ public class EndScreenController : MonoBehaviour
         scoreText.text = "Score: " + playerScore.ToString();
     }
 
-    // Function to handle the exit button (can quit or restart the game)
+    // Function to handle the exit button
     private void ExitGame()
     {
-        // For example, you could reload the scene or quit the application
-        // SceneManager.LoadScene("MainMenu"); // Uncomment to reload main menu
         Application.Quit();  // Quits the application
     }
 }

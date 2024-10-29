@@ -1,8 +1,5 @@
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -15,16 +12,7 @@ public class WeatherHUDManager : MonoBehaviour
     public Sprite rainSprite;
     public Sprite snowSprite;
 
-    // Start is called before the first frame update
-    void Start()
-    {
-    }
-
-    void Update()
-    {
-
-    }
-
+    //Updates the weather HUD with the current weather queue
     public void UpdateQueue(Queue<TurnManager.WeatherState> queue)
     {
         for (int i = 0; i<3;i++)

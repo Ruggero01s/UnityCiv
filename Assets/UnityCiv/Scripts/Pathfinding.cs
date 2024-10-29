@@ -1,21 +1,18 @@
-using System;
-using System.Collections;
 using System.Collections.Generic;
-using UnityEditor;
 using UnityEngine;
-using System.Linq;
+
 public class Pathfinding
 {
-    List<HexagonGame> openList;
-    List<HexagonGame> closedList;
+    List<HexagonGame> openList;  // Nodes to evaluate
+    List<HexagonGame> closedList; // Evaluated nodes
 
-    HexagonGame[,] hexes;
-    int xMax;
-    int yMax;
+    HexagonGame[,] hexes; // 2D grid of hexes
+    int xMax; // Max width of the grid
+    int yMax; // Max height of the grid
 
-    int MOVE_COST = 1;
+    const int MOVE_COST = 1; // Cost per move
 
-    GridController gridController;
+    GridController gridController; // Reference to the grid controller
 
     public Pathfinding(GridController gridController, HexagonGame[,] hexGrid, int xMax, int yMax)
     {
@@ -27,9 +24,10 @@ public class Pathfinding
 
     public List<HexagonGame> FindPath(HexagonGame startNode, HexagonGame endNode)
     {
-        openList = new List<HexagonGame> { startNode };
-        closedList = new List<HexagonGame>();
+        openList = new List<HexagonGame> { startNode }; // Initialize open list
+        closedList = new List<HexagonGame>(); // Initialize closed list
 
+        // Set initial costs for all hexes
         for (int x = 0; x < xMax; x++)
         {
             for (int y = 0; y < yMax; y++)
@@ -41,15 +39,16 @@ public class Pathfinding
             }
         }
 
+        // Set costs for the start node
         startNode.gCost = 0;
         startNode.hCost = CalculateDistanceCost(startNode, endNode);
         startNode.CalcFCost();
 
         while (openList.Count > 0)
         {
-            HexagonGame currentNode = GetLowestFCostNode(openList);
+            HexagonGame currentNode = GetLowestFCostNode(openList); // Get node with lowest fCost
             if (currentNode == endNode)
-                return CalculatePath(endNode);
+                return CalculatePath(endNode); // Path found
 
             openList.Remove(currentNode);
             closedList.Add(currentNode);
@@ -58,64 +57,57 @@ public class Pathfinding
             {
                 if (neighbour != null)
                 {
+                    // Handle special cases for occupied nodes
                     if ((neighbour.CompareTag("Occupied") || neighbour.CompareTag("PlayerCity")) && neighbour == endNode)
                         return CalculatePath(currentNode);
-                    else
+
+                    if (neighbour.CompareTag("MovableTerrain") && !closedList.Contains(neighbour))
                     {
-                        if (neighbour.CompareTag("MovableTerrain"))
+                        int tentativeGCost = currentNode.gCost + CalculateDistanceCost(currentNode, neighbour);
+                        if (tentativeGCost < neighbour.gCost)
                         {
+                            neighbour.cameFromHex = currentNode;
+                            neighbour.gCost = tentativeGCost;
+                            neighbour.hCost = CalculateDistanceCost(neighbour, endNode);
+                            neighbour.CalcFCost();
 
-                            if (closedList.Contains(neighbour)) continue;
-
-                            int tentativeGCost = currentNode.gCost + CalculateDistanceCost(currentNode, neighbour);
-                            if (tentativeGCost < neighbour.gCost)
-                            {
-                                neighbour.cameFromHex = currentNode;
-                                neighbour.gCost = tentativeGCost;
-                                neighbour.hCost = CalculateDistanceCost(neighbour, endNode);
-                                neighbour.CalcFCost();
-
-                                if (!openList.Contains(neighbour))
-                                    openList.Add(neighbour);
-                            }
+                            if (!openList.Contains(neighbour))
+                                openList.Add(neighbour); // Add to open list if not already present
                         }
                     }
                 }
             }
         }
 
-        // out of nodes on open list, no path
-        return null;
+        return null; // No path found
     }
 
     private List<HexagonGame> CalculatePath(HexagonGame endNode)
     {
-        List<HexagonGame> path = new();
-        path.Add(endNode);
+        List<HexagonGame> path = new() { endNode };
         HexagonGame currentNode = endNode;
         while (currentNode.cameFromHex != null)
         {
             path.Add(currentNode.cameFromHex);
             currentNode = currentNode.cameFromHex;
         }
-        path.Reverse();
+        path.Reverse(); // Reverse to get path from start to end
         return path;
     }
 
     private HexagonGame GetLowestFCostNode(List<HexagonGame> nodeList)
     {
         HexagonGame lowestFCostNode = nodeList[0];
-        for (int i = 0; i < nodeList.Count; i++)
+        foreach (HexagonGame node in nodeList)
         {
-            if (nodeList[i].fCost < lowestFCostNode.fCost)
-                lowestFCostNode = nodeList[i];
+            if (node.fCost < lowestFCostNode.fCost)
+                lowestFCostNode = node; // Find node with lowest fCost
         }
         return lowestFCostNode;
     }
 
     private int CalculateDistanceCost(HexagonGame start, HexagonGame end)
     {
-
-        return Mathf.RoundToInt(MOVE_COST * Vector3.Distance(start.rawPosition, end.rawPosition));
+        return Mathf.RoundToInt(MOVE_COST * Vector3.Distance(start.rawPosition, end.rawPosition)); // Calculate distance cost
     }
 }

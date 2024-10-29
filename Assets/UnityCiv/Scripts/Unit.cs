@@ -18,7 +18,7 @@ public class Unit : MonoBehaviour
 
     private Animator animator;
 
-    // The path the unit will follow (set externally when a destination is selected)
+    // The path the unit will travel
     public List<HexagonGame> path;
 
     public Vector2Int coordinates;  // Current hex grid coordinates
@@ -27,19 +27,17 @@ public class Unit : MonoBehaviour
     public float speed = 20f;        // Movement speed
     public float rotationSpeed = 700f; // Rotation speed for smooth turning
 
-    public bool isMoving = false;   // Whether the unit is currently moving
-
+    // Animation parameters
+    public bool isMoving = false;
     public bool isFighting = false;
-
     public bool isDying = false;
-
     public bool hasAttacked = false;
 
     private bool destinationReached = false; // Flag for destination status
 
     private int pathCounter = 1;
 
-    GameObject highlight;
+    GameObject highlight; // Highlight for when unit is selected
 
     void Start()
     {
@@ -101,7 +99,7 @@ public class Unit : MonoBehaviour
         }
     }
 
-    // Moves the unit towards a specific tile (HexagonGame)
+    // Moves the unit towards a specific tile
     public void MoveTo(HexagonGame targetTile)
     {
         Vector3 targetPosition = targetTile.rawPosition;
@@ -132,6 +130,7 @@ public class Unit : MonoBehaviour
     {
         movementExpended = 0;
         isMoving = false;
+        hasAttacked = false;
         destinationReached = false;
     }
 
@@ -141,6 +140,7 @@ public class Unit : MonoBehaviour
         return destinationReached;
     }
 
+    // Manages active state of higlight
     public void Highlight()
     {
         highlight.SetActive(true);
