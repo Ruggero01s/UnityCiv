@@ -88,6 +88,7 @@ public class CityHUDManager : MonoBehaviour
             else
             {
                 hudController.Notify("No space to spawn new unit!");
+                currentCity.owner.funds+=ctrl.TRAIN_UNIT_COST;
             }
         }
         else

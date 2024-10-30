@@ -5,6 +5,8 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using Random = System.Random;
 
+//TODO turn sensitive score modifier
+
 public class TurnManager : MonoBehaviour
 {
     public enum TurnState { PlayerTurn, EnemyTurn }
@@ -259,7 +261,7 @@ public class TurnManager : MonoBehaviour
             Destroy(loser.city.gameObject);
             int playerScore = player.score;
             ctrl.gameHUDcanvas.gameObject.SetActive(false);
-            endScreenCtrl.ShowEndScreen(true, playerScore);  // Player wins
+            endScreenCtrl.ShowEndScreen(true, playerScore, turnCount);  // Player wins
         }
         else if (loser == player)
         {
@@ -268,7 +270,7 @@ public class TurnManager : MonoBehaviour
             Destroy(loser.city.gameObject);
             int playerScore = player.score;
             ctrl.gameHUDcanvas.gameObject.SetActive(false);
-            endScreenCtrl.ShowEndScreen(false, playerScore);  // Player loses
+            endScreenCtrl.ShowEndScreen(false, playerScore, turnCount);  // Player loses
         }
     }
 
@@ -438,7 +440,7 @@ public class TurnManager : MonoBehaviour
     }
 
     IEnumerator StartEnemyTurn()
-    {
+    {/*
         // Wait for all units to finish their actions (moving, fighting, etc.)
         yield return StartCoroutine(WaitForUnitsToFinishActions());
 
@@ -458,7 +460,8 @@ public class TurnManager : MonoBehaviour
 
         // Final wait for all units to finish after potential attacks
         yield return StartCoroutine(WaitForUnitsToFinishActions());
-
+*/
+        yield return null;
         // End the enemy turn
         EndEnemyTurn();
     }

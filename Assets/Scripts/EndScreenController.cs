@@ -1,13 +1,16 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using System;
 
 public class EndScreenController : MonoBehaviour
 {
     public GameObject endScreenPanel;     
     public TextMeshProUGUI outcomeText;      // Text for displaying "You win" or "You lost"
     public TextMeshProUGUI scoreText;
-    public Button exitButton;                
+    public Button exitButton;    
+
+    public float decayRate = 0.02f;
 
     private void Start()
     {
@@ -16,7 +19,7 @@ public class EndScreenController : MonoBehaviour
     }
 
     // Call this function when the game ends
-    public void ShowEndScreen(bool playerWon, int playerScore)
+    public void ShowEndScreen(bool playerWon, int playerScore, int turnsTaken)
     {
         endScreenPanel.SetActive(true);      // Display the end screen
 
@@ -29,9 +32,16 @@ public class EndScreenController : MonoBehaviour
         {
             outcomeText.text = "You lost!";
         }
+        double multiplier;
+        if (playerWon)
+            multiplier = 1.2 + Math.Truncate(Math.Exp(-decayRate*turnsTaken)*100)/100;
+        else
+            multiplier = 1 + Math.Truncate(Math.Exp(-decayRate*turnsTaken)*100)/100;
+
+        double score = Math.Floor(playerScore * multiplier);
 
         // Display the player's score
-        scoreText.text = "Score: " + playerScore.ToString();
+        scoreText.text = "Score: " + playerScore + " x " + multiplier + " = " + score;
     }
 
     // Function to handle the exit button
