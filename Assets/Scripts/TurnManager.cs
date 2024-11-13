@@ -6,7 +6,7 @@ using UnityEngine.EventSystems;
 using Random = System.Random;
 
 //TODO turn sensitive score modifier
-
+//TODO limit hp at 0
 public class TurnManager : MonoBehaviour
 {
     public enum TurnState { PlayerTurn, EnemyTurn }
@@ -36,6 +36,8 @@ public class TurnManager : MonoBehaviour
     public enum WeatherState { Clear, Rain, Snow }
 
     public Queue<WeatherState> weatherQueue;
+
+    public bool gameEnded = false;
 
     void Start()
     {
@@ -227,6 +229,8 @@ public class TurnManager : MonoBehaviour
             Quaternion lookRotation = Quaternion.LookRotation(new Vector3(direction.x, direction.y, direction.z));
             Instantiate(ctrl.cityAttackParticle, player.city.gameObject.transform.position, lookRotation);
 
+            yield return new WaitForSeconds(combatTime);
+
             // reduce city health by the attacking unit's attack value
             player.city.defenseHp -= attacker.atk;
             HUDctrl.Notify(attacker.owner.playerName + " unit attacks the player city doing " + attacker.atk + " damage");
@@ -254,6 +258,7 @@ public class TurnManager : MonoBehaviour
 
     public IEnumerator DestroyCity(Player loser)
     {
+        gameEnded = true;
         if (loser == enemy)
         {
             Instantiate(ctrl.cityDestroyedParticle, loser.city.transform.position, Quaternion.Euler(-90, 0, 0));
@@ -440,7 +445,7 @@ public class TurnManager : MonoBehaviour
     }
 
     IEnumerator StartEnemyTurn()
-    {/*
+    {
         // Wait for all units to finish their actions (moving, fighting, etc.)
         yield return StartCoroutine(WaitForUnitsToFinishActions());
 
@@ -460,7 +465,7 @@ public class TurnManager : MonoBehaviour
 
         // Final wait for all units to finish after potential attacks
         yield return StartCoroutine(WaitForUnitsToFinishActions());
-*/
+
         yield return null;
         // End the enemy turn
         EndEnemyTurn();

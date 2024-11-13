@@ -93,7 +93,7 @@ public class GridController : MonoBehaviour
 		// Identifies possible spawn locations
 		foreach (HexagonGame gameHex in gameHexagons)
 		{
-			if (gameHex.CompareTag("MovableTerrain"))
+			if (gameHex.CompareTag("MovableTerrain") && GetGameNeighbors(gameHex).Count == 6)
 			{
 				possibleSpawnHexes.Add(gameHex);
 			}
@@ -377,7 +377,7 @@ public class GridController : MonoBehaviour
 	// Initializes player and enemy with unique names and colors
 	private void InitializePlayers()
 	{
-		player = new Player("Tyurn", Color.blue); // Player with blue color
+		player = new Player("Player", Color.blue); // Player with blue color
 		enemy = new Player("Undeads", Color.black); // Enemy with black color
 
 		// Sets controller references for player and enemy
@@ -395,7 +395,7 @@ public class GridController : MonoBehaviour
 		// Finds potential spawn locations for enemy city, ensuring distance from player city
 		foreach (HexagonGame hex in possibleSpawnHexes)
 		{
-			if (HexDistance(hex.coordinates, playerCityHex.coordinates) > 5)
+			if (HexDistance(hex.coordinates, playerCityHex.coordinates) > 8) 
 			{
 				enemySpawnHexes.Add(hex);
 			}

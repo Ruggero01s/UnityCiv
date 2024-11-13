@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -24,6 +25,7 @@ public class HexagonGame : MonoBehaviour
     public Player owner;
 
     private GameObject overlay; // Reference to the overlay object
+    private Renderer overlayRenderer;
 
     public override string ToString()
     {
@@ -84,7 +86,7 @@ public class HexagonGame : MonoBehaviour
         overlay.transform.rotation = Quaternion.Euler(0, 0, 0); // Rotate to lay flat
 
         // Set the overlay material
-        Renderer overlayRenderer = overlay.GetComponent<Renderer>();
+        overlayRenderer = overlay.GetComponent<Renderer>();
         overlayRenderer.material.color = new Color(1, 1, 1, 0); // Initially transparent
         overlay.SetActive(false); // Hide overlay by default
     }
@@ -96,7 +98,6 @@ public class HexagonGame : MonoBehaviour
         // If the hex is already owned, remove it from the previous owner’s list
         owner?.RemoveControlledHex(this);
 
-        // Assign new ownership
         owner = newOwner;
         owner.AddControlledHex(this);
 
@@ -116,7 +117,7 @@ public class HexagonGame : MonoBehaviour
         if (owner != null)
         {
             Color ownerColor = owner.ownedColor; // Change to player color
-            overlay.GetComponent<Renderer>().material.color = new Color(ownerColor.r, ownerColor.g, ownerColor.b, 0.2f); // Set overlay color with some transparency
+            overlayRenderer.material.color = new Color(ownerColor.r, ownerColor.g, ownerColor.b, 0.2f); // Set overlay color with some transparency // TODO Why null when restart?
             overlay.SetActive(true); // Show overlay
         }
         else

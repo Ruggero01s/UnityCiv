@@ -25,6 +25,9 @@ public class CameraController : MonoBehaviour
     // Normalization factor for adjusting movement speed based on zoom level
     private float zoomMultiplier;
 
+    // To stop camera from moving during pause
+    public bool disableMovement;
+
     void Start()
     {
         // Initialize target position, rotation, and zoom to current settings
@@ -38,9 +41,12 @@ public class CameraController : MonoBehaviour
 
     void Update()
     {
-        // Check for user input to handle zoom and movement each frame
-        HandleMouseInput();
-        HandleMovementInput();
+        if (!disableMovement)
+        {
+            // Check for user input to handle zoom and movement each frame
+            HandleMouseInput();
+            HandleMovementInput();
+        }
     }
 
     void HandleMovementInput()
@@ -53,6 +59,7 @@ public class CameraController : MonoBehaviour
             moveSpeed = fastSpeed * zoomMultiplier;
         else
             moveSpeed = normalSpeed * zoomMultiplier;
+
 
         // Move camera forward/backward based on W/S or Up/Down Arrow keys
         if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow))
@@ -79,7 +86,7 @@ public class CameraController : MonoBehaviour
             newZoom -= zoomAmount;
 
         // Smoothly interpolate camera movement and rotation towards target values
-        transform.SetPositionAndRotation(Vector3.Lerp(transform.position, newPosition, Time.deltaTime * moveTime), 
+        transform.SetPositionAndRotation(Vector3.Lerp(transform.position, newPosition, Time.deltaTime * moveTime),
                                         Quaternion.Lerp(transform.rotation, newRotation, Time.deltaTime * moveTime));
 
         // Clamp zoom within set bounds and apply the updated zoom smoothly
